@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- NuGet Package Metadata -->
+    <PackageId>AxisEndpoints</PackageId>
+    <Version>1.0.0</Version>
+    <Title>AxisEndpoints</Title>
+    <Description>A DSL for implementing the Request-Endpoint-Response (REPR) pattern in ASP.NET Core. Consolidates endpoints with a clear and explicit programming interface, well-suited for Vertical Slice Architecture projects.</Description>
+    <Authors>Sheepla</Authors>
+    <PackageProjectUrl>https://github.com/sheepla/AxisEndpoints</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/sheepla/AxisEndpoints</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>asp-net-core;repr-pattern;endpoints;vertical-slice-architecture;openapi</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WebApplication, IHttpContextAccessor など ASP.NET Core の型を使うために必要 -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,103 @@
+@baseUrl = http://localhost:5081
+
+### Health check — IEndpoint<TResponse>, AllowAnonymous
+GET {{baseUrl}}/health
+Accept: application/json
+
+###
+
+### List users — [FromQuery] pagination
+GET {{baseUrl}}/api/users?page=1&pageSize=2
+Accept: application/json
+
+###
+
+### List users — filter by role
+GET {{baseUrl}}/api/users?role=Admin
+Accept: application/json
+
+###
+
+### Find user by ID — [FromRoute], EndpointContext header
+GET {{baseUrl}}/api/users/1
+Accept: application/json
+
+###
+
+### Find user by ID — Accept-Language header demo
+GET {{baseUrl}}/api/users/1
+Accept: application/json
+Accept-Language: ja
+
+###
+
+### Find user — 404 (ID does not exist in dummy data)
+GET {{baseUrl}}/api/users/999
+Accept: application/json
+
+###
+
+### Create user — POST body binding, DataAnnotations validation (valid)
+POST {{baseUrl}}/api/users
+Content-Type: application/json
+
+{
+  "name": "Eve",
+  "email": "eve@example.com",
+  "role": "User"
+}
+
+###
+
+### Create user — 400 validation error: invalid email
+POST {{baseUrl}}/api/users
+Content-Type: application/json
+
+{
+  "name": "Eve",
+  "email": "not-an-email"
+}
+
+###
+
+### Create user — 400 validation error: name too long (>100 chars)
+POST {{baseUrl}}/api/users
+Content-Type: application/json
+
+{
+  "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "email": "toolong@example.com"
+}
+
+###
+
+### Update user — multipart/form-data, BindAsync
+PUT {{baseUrl}}/api/users/1
+Content-Type: multipart/form-data; boundary=----Boundary
+
+------Boundary
+Content-Disposition: form-data; name="name"
+
+Alice Updated
+------Boundary
+Content-Disposition: form-data; name="email"
+
+alice-updated@example.com
+------Boundary--
+
+###
+
+### Delete user — EmptyResponse 204 No Content
+DELETE {{baseUrl}}/api/users/1
+
+###
+
+### Admin stats — [FromQuery] date range, group-level filter
+GET {{baseUrl}}/admin/stats?from=2025-01-01&to=2025-12-31
+Accept: application/json
+
+###
+
+### Admin stats — defaults (last 30 days)
+GET {{baseUrl}}/admin/stats
+Accept: application/json
