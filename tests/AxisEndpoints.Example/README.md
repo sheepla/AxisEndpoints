@@ -1,4 +1,4 @@
-# Example application
+# AxisEndpoints example application
 
 The `tests/AxisEndpoints.Example` project demonstrates every core feature with minimal dummy logic.
 
@@ -31,7 +31,7 @@ A quick reference of what each request exercises:
 | `DELETE /api/users/1`                         | `EmptyResponse` 204 No Content                            |
 | `GET /admin/stats`                            | `[FromQuery]` date range, group-level `LoggingFilter`     |
 
-## Authorization in a real application
+### Authorization in a real application
 
 The example runs without authentication to keep setup minimal. The comments in each `Configure()` method show the `RequireAuthorization` call you would add in a real application. For example:
 
