@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 
 namespace AxisEndpoints.Internal;
 
@@ -21,6 +20,7 @@ internal sealed class EndpointConfiguration : IEndpointConfiguration
 
     internal Type? GroupType { get; private set; }
     internal EndpointGroupConfiguration? GroupConfig { get; private set; }
+    internal Type? ResponseType { get; set; }
 
     // Filter types are stored in registration order and applied during MapEndpoints.
     internal List<Type> FilterTypes { get; } = [];
