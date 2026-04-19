@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Reflection;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -14,11 +15,25 @@ internal static class EndpointRegistry
         IEnumerable<Assembly> assemblies
     )
     {
-        var endpointTypes = assemblies.SelectMany(a => a.GetTypes()).Where(IsEndpointType);
+        var assemblyList = assemblies.ToList();
+        var endpointTypes = assemblyList.SelectMany(a => a.GetTypes()).Where(IsEndpointType);
 
         foreach (var type in endpointTypes)
         {
             services.AddScoped(type);
+        }
+
+        // Collect all IEndpointFilter implementations in the scanned assemblies and register
+        // them as scoped so AddFilter<TFilter>() can resolve them from DI at request time.
+        var filterTypes = assemblyList
+            .SelectMany(a => a.GetTypes())
+            .Where(t =>
+                !t.IsAbstract && !t.IsInterface && typeof(IEndpointFilter).IsAssignableFrom(t)
+            );
+
+        foreach (var filterType in filterTypes)
+        {
+            services.AddScoped(filterType);
         }
     }
 
@@ -29,7 +44,6 @@ internal static class EndpointRegistry
     )
     {
         var endpointTypes = assemblies.SelectMany(a => a.GetTypes()).Where(IsEndpointType);
-
         var groupBuilders = new Dictionary<Type, RouteGroupBuilder>();
 
         foreach (var type in endpointTypes)
@@ -48,7 +62,7 @@ internal static class EndpointRegistry
                 : (IEndpointRouteBuilder)app;
 
             var routeHandlerBuilder = MapRoute(routeBuilder, type, config, options);
-            ApplyMetadata(routeHandlerBuilder, config, options);
+            ApplyMetadata(routeHandlerBuilder, config);
         }
     }
 
@@ -79,7 +93,6 @@ internal static class EndpointRegistry
         Type endpointType
     )
     {
-        // Skip the constructor entirely — Configure() has no DI dependencies.
         var instance = System.Runtime.Serialization.FormatterServices.GetUninitializedObject(
             endpointType
         );
@@ -162,17 +175,19 @@ internal static class EndpointRegistry
         AxisEndpointsOptions options
     )
     {
-        // POST/PUT/PATCH bind TRequest from the body.
-        // GET/DELETE/HEAD have no body, so TRequest is bound from route values and query string.
         var usesBody =
             config.Method
             is HttpEndpointMethod.Post
                 or HttpEndpointMethod.Put
                 or HttpEndpointMethod.Patch;
 
+        // POST/PUT/PATCH: bind TRequest from the JSON body.
+        // GET/DELETE/HEAD: pass TRequest via [AsParameters] so Minimal API expands its
+        //   properties into individual route/query parameters for OpenAPI metadata generation.
+        //   Types that define BindAsync fall back to (HttpContext, CancellationToken) binding.
         var handler = usesBody
-            ? MakeHandler(endpointType, requestType, responseType)
-            : MakeHandlerFromContext(endpointType, requestType, responseType);
+            ? MakeBodyHandler(endpointType, requestType, responseType)
+            : MakeParameterHandler(endpointType, requestType, responseType);
 
         var routeHandlerBuilder = config.Method switch
         {
@@ -187,8 +202,8 @@ internal static class EndpointRegistry
 
         if (!options.DisableDataAnnotationsValidation)
         {
-            // The filter is constructed inline rather than resolved from DI because it is a
-            // generic type parameterized on TRequest, which cannot be registered in DI generically.
+            // Constructed inline because DataAnnotationsValidationFilter<TRequest> is a closed
+            // generic type that cannot be registered in the DI container generically.
             var filterType = typeof(DataAnnotationsValidationFilter<>).MakeGenericType(requestType);
             var filter = (IEndpointFilter)Activator.CreateInstance(filterType)!;
             routeHandlerBuilder.AddEndpointFilter(filter);
@@ -204,7 +219,8 @@ internal static class EndpointRegistry
         Type responseType
     )
     {
-        var handler = MakeHandlerNoRequest(endpointType, responseType);
+        var handler = MakeNoRequestHandler(endpointType, responseType);
+
         return config.Method switch
         {
             HttpEndpointMethod.Get => builder.MapGet(config.Route, handler),
@@ -217,45 +233,75 @@ internal static class EndpointRegistry
         };
     }
 
-    private static Delegate MakeHandler(Type endpointType, Type requestType, Type responseType)
-    {
-        var method = typeof(EndpointRegistry)
-            .GetMethod(nameof(CreateHandler), BindingFlags.NonPublic | BindingFlags.Static)!
-            .MakeGenericMethod(endpointType, requestType, responseType);
+    // --- Delegate factories ---
 
-        return (Delegate)method.Invoke(null, [])!;
-    }
+    private static Delegate MakeBodyHandler(
+        Type endpointType,
+        Type requestType,
+        Type responseType
+    ) =>
+        (Delegate)
+            typeof(EndpointRegistry)
+                .GetMethod(nameof(CreateBodyHandler), BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(endpointType, requestType, responseType)
+                .Invoke(null, [])!;
 
-    private static Delegate MakeHandlerFromContext(
+    private static Delegate MakeParameterHandler(
         Type endpointType,
         Type requestType,
         Type responseType
     )
     {
-        var method = typeof(EndpointRegistry)
-            .GetMethod(
-                nameof(CreateHandlerFromContext),
-                BindingFlags.NonPublic | BindingFlags.Static
-            )!
-            .MakeGenericMethod(endpointType, requestType, responseType);
+        // Types with BindAsync handle their own binding — wrap in a context-only handler.
+        var hasBindAsync =
+            requestType.GetMethod(
+                "BindAsync",
+                BindingFlags.Public | BindingFlags.Static,
+                [typeof(HttpContext), typeof(ParameterInfo)]
+            )
+            is not null;
 
-        return (Delegate)method.Invoke(null, [])!;
+        if (hasBindAsync)
+        {
+            return (Delegate)
+                typeof(EndpointRegistry)
+                    .GetMethod(
+                        nameof(CreateBindAsyncHandler),
+                        BindingFlags.NonPublic | BindingFlags.Static
+                    )!
+                    .MakeGenericMethod(endpointType, requestType, responseType)
+                    .Invoke(null, [])!;
+        }
+
+        // Use [AsParameters] handler: Minimal API expands TRequest properties into individual
+        // route/query parameters, preserving [FromRoute]/[FromQuery] attributes on each property.
+        return (Delegate)
+            typeof(EndpointRegistry)
+                .GetMethod(
+                    nameof(CreateAsParametersHandler),
+                    BindingFlags.NonPublic | BindingFlags.Static
+                )!
+                .MakeGenericMethod(endpointType, requestType, responseType)
+                .Invoke(null, [])!;
     }
 
-    private static Delegate MakeHandlerNoRequest(Type endpointType, Type responseType)
-    {
-        var method = typeof(EndpointRegistry)
-            .GetMethod(
-                nameof(CreateHandlerNoRequest),
-                BindingFlags.NonPublic | BindingFlags.Static
-            )!
-            .MakeGenericMethod(endpointType, responseType);
+    private static Delegate MakeNoRequestHandler(Type endpointType, Type responseType) =>
+        (Delegate)
+            typeof(EndpointRegistry)
+                .GetMethod(
+                    nameof(CreateNoRequestHandler),
+                    BindingFlags.NonPublic | BindingFlags.Static
+                )!
+                .MakeGenericMethod(endpointType, responseType)
+                .Invoke(null, [])!;
 
-        return (Delegate)method.Invoke(null, [])!;
-    }
+    // --- Concrete handler implementations ---
 
-    // POST/PUT/PATCH: TRequest is automatically bound from the request body.
-    private static Func<TRequest, HttpContext, CancellationToken, Task> CreateHandler<
+    /// <summary>
+    /// POST/PUT/PATCH: TRequest bound from the JSON body.
+    /// Returns Task&lt;IResult&gt; so Minimal API infers TResponse for OpenAPI response schema.
+    /// </summary>
+    private static Func<TRequest, HttpContext, CancellationToken, Task<IResult>> CreateBodyHandler<
         TEndpoint,
         TRequest,
         TResponse
@@ -265,13 +311,43 @@ internal static class EndpointRegistry
         return async (TRequest request, HttpContext context, CancellationToken cancel) =>
         {
             var endpoint = context.RequestServices.GetRequiredService<TEndpoint>();
-            var sender = new ResponseSender<TResponse>(context);
+            var sender = new ResponseSender<TResponse>();
             await endpoint.HandleAsync(sender, request, cancel);
+            return sender.Result ?? Results.Ok();
         };
     }
 
-    // GET/DELETE/HEAD: TRequest is bound from route values and query string.
-    private static Func<HttpContext, CancellationToken, Task> CreateHandlerFromContext<
+    /// <summary>
+    /// GET/DELETE/HEAD: [AsParameters] causes Minimal API to expand TRequest properties
+    /// into individual parameters, generating correct OpenAPI route/query parameter metadata
+    /// while preserving [FromRoute] and [FromQuery] attributes.
+    /// </summary>
+    private static Func<
+        TRequest,
+        HttpContext,
+        CancellationToken,
+        Task<IResult>
+    > CreateAsParametersHandler<TEndpoint, TRequest, TResponse>()
+        where TEndpoint : class, IEndpoint<TRequest, TResponse>
+    {
+        return async (
+            [AsParameters] TRequest request,
+            HttpContext context,
+            CancellationToken cancel
+        ) =>
+        {
+            var endpoint = context.RequestServices.GetRequiredService<TEndpoint>();
+            var sender = new ResponseSender<TResponse>();
+            await endpoint.HandleAsync(sender, request, cancel);
+            return sender.Result ?? Results.Ok();
+        };
+    }
+
+    /// <summary>
+    /// GET/DELETE/HEAD with BindAsync: the type handles its own binding from HttpContext.
+    /// OpenAPI parameter metadata is not inferred for these — document manually if needed.
+    /// </summary>
+    private static Func<HttpContext, CancellationToken, Task<IResult>> CreateBindAsyncHandler<
         TEndpoint,
         TRequest,
         TResponse
@@ -280,14 +356,26 @@ internal static class EndpointRegistry
     {
         return async (HttpContext context, CancellationToken cancel) =>
         {
-            var request = await BindRequestAsync<TRequest>(context, cancel);
+            var bindMethod = typeof(TRequest).GetMethod(
+                "BindAsync",
+                BindingFlags.Public | BindingFlags.Static,
+                [typeof(HttpContext), typeof(ParameterInfo)]
+            )!;
+
+            var result = bindMethod.Invoke(null, [context, null!]);
+            var request = await (ValueTask<TRequest>)result!;
+
             var endpoint = context.RequestServices.GetRequiredService<TEndpoint>();
-            var sender = new ResponseSender<TResponse>(context);
+            var sender = new ResponseSender<TResponse>();
             await endpoint.HandleAsync(sender, request, cancel);
+            return sender.Result ?? Results.Ok();
         };
     }
 
-    private static Func<HttpContext, CancellationToken, Task> CreateHandlerNoRequest<
+    /// <summary>
+    /// IEndpoint&lt;TResponse&gt;: no request parameters at all.
+    /// </summary>
+    private static Func<HttpContext, CancellationToken, Task<IResult>> CreateNoRequestHandler<
         TEndpoint,
         TResponse
     >()
@@ -296,61 +384,17 @@ internal static class EndpointRegistry
         return async (HttpContext context, CancellationToken cancel) =>
         {
             var endpoint = context.RequestServices.GetRequiredService<TEndpoint>();
-            var sender = new ResponseSender<TResponse>(context);
+            var sender = new ResponseSender<TResponse>();
             await endpoint.HandleAsync(sender, cancel);
+            return sender.Result ?? Results.Ok();
         };
     }
 
-    /// <summary>
-    /// Binds TRequest from route values and query string.
-    /// Delegates to the type's static BindAsync method if present (Minimal API convention),
-    /// otherwise falls back to setting writable properties by name.
-    /// </summary>
-    private static async ValueTask<TRequest> BindRequestAsync<TRequest>(
-        HttpContext context,
-        CancellationToken cancel
-    )
-    {
-        var bindMethod = typeof(TRequest).GetMethod(
-            "BindAsync",
-            BindingFlags.Public | BindingFlags.Static,
-            [typeof(HttpContext), typeof(ParameterInfo)]
-        );
-
-        if (bindMethod is not null)
-        {
-            var result = bindMethod.Invoke(null, [context, null!]);
-            return await (ValueTask<TRequest>)result!;
-        }
-
-        // Fallback: populate writable properties from route values then query string.
-        var instance = Activator.CreateInstance<TRequest>()!;
-        var properties = typeof(TRequest)
-            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.CanWrite);
-
-        foreach (var prop in properties)
-        {
-            var rawValue =
-                context.GetRouteValue(prop.Name)?.ToString()
-                ?? context.Request.Query[prop.Name].FirstOrDefault();
-
-            if (rawValue is null)
-            {
-                continue;
-            }
-
-            var converted = Convert.ChangeType(rawValue, prop.PropertyType);
-            prop.SetValue(instance, converted);
-        }
-
-        return instance;
-    }
+    // --- Metadata helpers ---
 
     private static void ApplyMetadata(
         RouteHandlerBuilder routeBuilder,
-        EndpointConfiguration config,
-        AxisEndpointsOptions options
+        EndpointConfiguration config
     )
     {
         if (config.Tags.Length > 0)
@@ -385,7 +429,6 @@ internal static class EndpointRegistry
             routeBuilder.RequireAuthorization(policy => policy.RequireRole(config.Roles));
         }
 
-        // Filters are resolved from DI at request time via AddEndpointFilter(Type).
         foreach (var filterType in config.FilterTypes)
         {
             routeBuilder.AddEndpointFilter(
@@ -424,6 +467,18 @@ internal static class EndpointRegistry
         else if (config.Roles.Length > 0)
         {
             groupBuilder.RequireAuthorization(policy => policy.RequireRole(config.Roles));
+        }
+
+        foreach (var filterType in config.FilterTypes)
+        {
+            groupBuilder.AddEndpointFilter(
+                async (context, next) =>
+                {
+                    var filter = (IEndpointFilter)
+                        context.HttpContext.RequestServices.GetRequiredService(filterType);
+                    return await filter.InvokeAsync(context, next);
+                }
+            );
         }
     }
 }

@@ -13,7 +13,7 @@ Accept: application/json
 ###
 
 ### List users — filter by role
-GET {{baseUrl}}/api/users?role=Admin
+GET {{baseUrl}}/api/users?role=Admin&page=1&pageSize=10
 Accept: application/json
 
 ###

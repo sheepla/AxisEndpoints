@@ -7,7 +7,7 @@ namespace AxisEndpoints.Example.Features.Users.FindById;
 /// Demonstrates:
 ///   - IEndpoint&lt;TRequest, TResponse&gt; with [FromRoute] binding (GET)
 ///   - EndpointContext: reading the Accept-Language request header
-///   - Conditional 404 response when the resource is not found
+///   - Conditional 404 via sender.StatusCode(HttpStatusCode.NotFound)
 /// </summary>
 public class FindByIdEndpoint : IEndpoint<FindByIdRequest, UserResponse>
 {
@@ -41,9 +41,18 @@ public class FindByIdEndpoint : IEndpoint<FindByIdRequest, UserResponse>
         // Dummy: only ID 1 exists. Any other ID returns 404.
         if (request.Id != 1)
         {
-            // IResponseSender does not support problem details directly — write the 404 via RawResponse.
-            _context.RawResponse.StatusCode = StatusCodes.Status404NotFound;
-            return Task.CompletedTask;
+            return sender
+                .StatusCode(HttpStatusCode.NotFound)
+                .SendAsync(
+                    new UserResponse
+                    {
+                        Id = 0,
+                        Name = string.Empty,
+                        Email = string.Empty,
+                        Role = string.Empty,
+                    },
+                    cancel
+                );
         }
 
         var user = new UserResponse
