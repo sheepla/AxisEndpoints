@@ -33,10 +33,15 @@ internal sealed class ResponseSender<TResponse> : IResponseSender<TResponse>
         // Build an IResult rather than writing directly to the response stream.
         // Minimal API reads the generic type argument of Ok<T> / Json<T> to populate
         // the OpenAPI response schema — writing to HttpResponse bypasses this inference.
-        IResult result =
-            response is EmptyResponse
-                ? Results.StatusCode((int)_statusCode)
-                : Results.Json(response, statusCode: (int)_statusCode);
+        //
+        // If TResponse itself implements IResult (e.g. CsvResponse<T> from an extension package),
+        // delegate execution directly so the response type can control its own serialization.
+        IResult result = response switch
+        {
+            EmptyResponse => Results.StatusCode((int)_statusCode),
+            IResult r => r,
+            _ => Results.Json(response, statusCode: (int)_statusCode),
+        };
 
         // Wrap with headers if any were set.
         Result = _headers.Count > 0 ? new HeadersResult(result, _headers) : result;

@@ -12,5 +12,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AxisEndpoints\AxisEndpoints.csproj" />
+    <ProjectReference Include="..\..\src\AxisEndpoints.Extensions.CsvHelper\AxisEndpoints.Extensions.CsvHelper.csproj" />
   </ItemGroup>
 </Project>
