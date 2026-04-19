@@ -310,7 +310,7 @@ internal static class EndpointRegistry
     >()
         where TEndpoint : class, IEndpoint<TRequest, TResponse>
     {
-        return async (TRequest request, HttpContext context, CancellationToken cancel) =>
+        return async (request, context, cancel) =>
         {
             var endpoint = context.RequestServices.GetRequiredService<TEndpoint>();
             var sender = new ResponseSender<TResponse>();
@@ -332,11 +332,7 @@ internal static class EndpointRegistry
     > CreateAsParametersHandler<TEndpoint, TRequest, TResponse>()
         where TEndpoint : class, IEndpoint<TRequest, TResponse>
     {
-        return async (
-            [AsParameters] TRequest request,
-            HttpContext context,
-            CancellationToken cancel
-        ) =>
+        return async ([AsParameters] request, context, cancel) =>
         {
             var endpoint = context.RequestServices.GetRequiredService<TEndpoint>();
             var sender = new ResponseSender<TResponse>();
@@ -356,7 +352,7 @@ internal static class EndpointRegistry
     >()
         where TEndpoint : class, IEndpoint<TRequest, TResponse>
     {
-        return async (HttpContext context, CancellationToken cancel) =>
+        return async (context, cancel) =>
         {
             var bindMethod = typeof(TRequest).GetMethod(
                 "BindAsync",
@@ -383,7 +379,7 @@ internal static class EndpointRegistry
     >()
         where TEndpoint : class, IEndpoint<TResponse>
     {
-        return async (HttpContext context, CancellationToken cancel) =>
+        return async (context, cancel) =>
         {
             var endpoint = context.RequestServices.GetRequiredService<TEndpoint>();
             var sender = new ResponseSender<TResponse>();
