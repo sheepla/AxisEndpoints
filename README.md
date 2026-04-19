@@ -67,9 +67,11 @@ Depending on your development style and potential conflicts with other libraries
 ```sh
 # Create the nuget package
 dotnet pack src/AxisEndpoints/AxisEndpoints.csproj -o <LocalNupkgDirectory>
+dotnet pack src/AxisEndpoints.Extensions.CsvHelper/AxisEndpoints.Extensions.CsvHelper.csproj -o <LocalNupkgDirectory>
 
 # Install AxisEndpoints from local nupkg
 dotnet add <YourProject> package AxisEndpoints --source <LocalNupkgDirectory>
+dotnet add <YourProject> package AxisEndpoints.Extensions.CsvHelper --source <LocalNupkgDirectory>
 ```
 
 ### Install from nuget.org
@@ -97,6 +99,12 @@ While FastEndpoints is a powerful and excellent library, it is built on its own 
 As a result, I felt I needed a library that offered a minimal, explicit programming interface that respected the standard ASP.NET Core API, which led me to build one myself.
 
 ## Usage
+
+This section explains the basic usage commonly found in general Web API development, as well as the fundamental primitives provided by AxisEndpoints.
+
+For practical examples, please also refer to the sample application available below.
+
+> [README - AxisEndpoints.Example](./tests/AxisEndpoints.Example/README.md)
 
 ### Setup on Program.cs
 
