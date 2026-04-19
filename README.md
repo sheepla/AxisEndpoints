@@ -28,9 +28,9 @@
       - [Require a dynamically constructed policy](#require-a-dynamically-constructed-policy)
       - [Allow anonymous access](#allow-anonymous-access)
       - [Group-level authorization](#group-level-authorization)
-    - [Accessing HTTP resources](#accessing-http-resources)
-    - [Grouping multiple endpoints](#grouping-multiple-endpoints)
-    - [Adding custom filters](#adding-custom-filters)
+    - [Accessing HTTP resources with EndpointContext](#accessing-http-resources-with-endpointcontext)
+    - [Grouping multiple endpoints with IEndpointGroup](#grouping-multiple-endpoints-with-iendpointgroup)
+    - [Adding custom filters with IEndpointFilter](#adding-custom-filters-with-iendpointfilter)
   - [Author](#author)
   - [License](#license)
 
@@ -260,6 +260,10 @@ public class DeleteUserEndpoint : IEndpoint<DeleteUserRequest, EmptyResponse>
 DataAnnotations attributes on `TRequest` are validated automatically before `HandleAsync` is called.
 On failure, a `400 Bad Request` response is returned in the standard [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem details format.
 
+> [Handle errors in ASP.NET Core APIs :: PloblemDetails - Microsoft Docs](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/error-handling-api?view=aspnetcore-10.0&tabs=minimal-apis#problem-details)
+
+> [PloblemDetails (Microsoft.AspNetCore.Mvc)](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.problemdetails?view=aspnetcore-10.0)
+
 ```csharp
 public class CreateUserRequest
 {
@@ -434,7 +438,7 @@ public class UsersGroup : IEndpointGroup
 }
 ```
 
-### Accessing HTTP resources
+### Accessing HTTP resources with EndpointContext
 
 For accessing request headers, the authenticated user, or writing a raw response stream (e.g. binary downloads, CSV), inject `EndpointContext` via the constructor. Do not inject it unless needed — typed request/response covers most cases.
 
@@ -484,7 +488,7 @@ public class UploadRequest
 }
 ```
 
-### Grouping multiple endpoints
+### Grouping multiple endpoints with IEndpointGroup
 
 Implement `IEndpointGroup` and reference it with `config.Group<TGroup>()`. All endpoints in the group share the prefix, tags, authorization policy, and filters defined on the group.
 
@@ -510,7 +514,7 @@ public class GetUsersEndpoint : IEndpoint<GetUsersResponse>
 }
 ```
 
-### Adding custom filters
+### Adding custom filters with IEndpointFilter
 
 Implement `IEndpointFilter` and register it with `config.AddFilter<TFilter>()`. Filters are resolved from DI per request, so constructor injection is supported. Register a filter on the group to apply it to all endpoints in that group.
 
