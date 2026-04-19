@@ -1,5 +1,4 @@
 using System.Reflection;
-using Microsoft.AspNetCore.Http;
 
 namespace AxisEndpoints.Example.Features.Users.Update;
 

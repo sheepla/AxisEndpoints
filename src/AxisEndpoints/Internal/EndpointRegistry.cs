@@ -1,6 +1,4 @@
-using System.ComponentModel;
 using System.Reflection;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -209,6 +207,7 @@ internal static class EndpointRegistry
             routeHandlerBuilder.AddEndpointFilter(filter);
         }
 
+        config.ResponseType = responseType;
         return routeHandlerBuilder;
     }
 
@@ -221,7 +220,7 @@ internal static class EndpointRegistry
     {
         var handler = MakeNoRequestHandler(endpointType, responseType);
 
-        return config.Method switch
+        var routeHandlerBuilder = config.Method switch
         {
             HttpEndpointMethod.Get => builder.MapGet(config.Route, handler),
             HttpEndpointMethod.Post => builder.MapPost(config.Route, handler),
@@ -231,6 +230,9 @@ internal static class EndpointRegistry
             HttpEndpointMethod.Head => builder.MapMethods(config.Route, ["HEAD"], handler),
             _ => throw new InvalidOperationException($"Unsupported HTTP method: {config.Method}"),
         };
+
+        config.ResponseType = responseType;
+        return routeHandlerBuilder;
     }
 
     // --- Delegate factories ---
@@ -439,6 +441,11 @@ internal static class EndpointRegistry
                     return await filter.InvokeAsync(context, next);
                 }
             );
+        }
+
+        if (config.ResponseType is not null)
+        {
+            routeBuilder.Produces(200, config.ResponseType);
         }
     }
 
