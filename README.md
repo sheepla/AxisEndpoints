@@ -2,34 +2,63 @@
 
 *This project is currently under development. Specifications are subject to change without notice.*
 
+## Table of Contents
+
+- [AxisEndpoints](#axisendpoints)
+  - [Table of Contents](#table-of-contents)
+  - [About](#about)
+  - [Features](#features)
+  - [Packages structure](#packages-structure)
+  - [Installation](#installation)
+    - [Install from local nupkg](#install-from-local-nupkg)
+    - [Install from nuget.org](#install-from-nugetorg)
+  - [Why? - The trade-offs of the three approaches](#why---the-trade-offs-of-the-three-approaches)
+  - [Usage](#usage)
+    - [Setup on Program.cs](#setup-on-programcs)
+    - [Defining endpoints with IEndpoint](#defining-endpoints-with-iendpoint)
+      - [`IEndpoint<TRequest, TResponse>` — request body + response](#iendpointtrequest-tresponse--request-body--response)
+      - [`IEndpoint<TRequest, TResponse>` — route / query parameters + response](#iendpointtrequest-tresponse--route--query-parameters--response)
+      - [`IEndpoint<TResponse>` — no parameters](#iendpointtresponse--no-parameters)
+      - [`IEndpoint<TRequest, EmptyResponse>` — no response body](#iendpointtrequest-emptyresponse--no-response-body)
+    - [Validation with DataAnnotations](#validation-with-dataannotations)
+    - [Validation with FluentValidation](#validation-with-fluentvalidation)
+    - [Authorization](#authorization)
+      - [Require roles](#require-roles)
+      - [Require a named policy](#require-a-named-policy)
+      - [Require a dynamically constructed policy](#require-a-dynamically-constructed-policy)
+      - [Allow anonymous access](#allow-anonymous-access)
+      - [Group-level authorization](#group-level-authorization)
+    - [Accessing HTTP resources](#accessing-http-resources)
+    - [Grouping multiple endpoints](#grouping-multiple-endpoints)
+    - [Adding custom filters](#adding-custom-filters)
+  - [Author](#author)
+  - [License](#license)
+
+
 ## About
 
-**AxisEndpoints** is a DSL for implementing the Request-Endpoint-Response a.k.a. REPR pattern. It provides **Axis** which consolidates the endpoints of your application!
+**AxisEndpoints** is a DSL for implementing the Request-Endpoint-Response a.k.a. REPR pattern. It provides **Axis** which consolidates the endpoints of your application! 
 
 - **Clear and explicit programming interface**: the REPR pattern can be implemented in a simple and robust way.
-- **Well-suited for Vertical Slice Architecture projects**: The REPR pattern is ideal for Vertical Slice Architecture, which involves slicing applications into functional units. Since each API endpoint operates as a self-contained unit, this approach ensures scalability and loose coupling between slices.
-- **OpenAPI First**: Since type annotation for requests and responses is enforced and you can add summaries and descriptions for each endpoint, your OpenAPI documentation becomes more detailed. This makes it easier to integrate with frontend applications written in TypeScript and other API clients, as well as to collaborate with other developers. Have you ever forgotten to include `TypedResults` on Minimal API or `ActionResult<T>` in Controllers? That won't happen anymore.
 - **Modular package structure**: Since extensions are provided as separate packages, you can include only the features you truly need in your application.
-- **Low learning curve**: It provides a safe interface while maintaining the level of abstraction of Minimal APIs.
+- **A gentle learning curve**: AxisEndpoints is built as a lightweight wrapper around the Minimal API. Each primitive is designed based on the Minimal API, so I think that developers familiar with the Minimal API will find it relatively easy to learn.
+- **Well-suited for Vertical Slice Architecture**: The REPR pattern is ideal for [Vertical Slice Architecture](https://learn.microsoft.com/en-us/shows/on-dotnet/on-dotnet-live-clean-architecture-vertical-slices-and-modular-monoliths-oh-my), which involves slicing applications into functional units. Since each API endpoint operates as a self-contained unit, this approach ensures scalability and loose coupling between slices.
 
+## Features
 
-## Why?
+- **OpenAPI-first and type safe**: When building a large-scale API, automatic OpenAPI generation is practically a must. Since type annotation for requests and responses is enforced and you can add summaries and descriptions for each endpoint, your OpenAPI documentation becomes more detailed. This makes it easier to integrate with frontend applications written in TypeScript and other API clients, as well as to collaborate with other developers. Have you ever forgotten to include `TypedResults` on Minimal API or `ActionResult<T>` in Controllers? That won't happen anymore! ✨
+- **Automatic validation with DataAnnotations**: It includes built-in attribute-based automatic validation using `System.ComponentModels.DataAnnotations`.
+- **Multiple endpoints grouping**: You can apply common routing and filters to multiple endpoints. This is useful for building APIs with a hierarchical structure.
+- **Custom filter configuration**: You can define specific processing steps common to multiple endpoints as filters. This differs from the standard middleware mechanism provided by ASP.NET Core, as it allows you to inject logic that applies only to specific endpoints or endpoint groups.
+- **Type-safe CSV input and output: (optional)**: As an extension, a package that supports type-safe CSV input and output is provided separately from the core components. 
 
-There are three ways to implement a Web API in ASP.NET Core:
-Minimal API, Controller, and the REPR pattern. The REPR pattern is the third option, following Minimal API and Controller.
-The REPR pattern is a way to implement an API using three components: HTTP requests, responses, and endpoints, which serve as the entry points to the application.
+## Packages structure
 
-- **Minimal API**: It is simple and highly flexible. It also offers excellent performance and provides a programming interface that is familiar to developers coming from Python, TypeScript, and other languages.
-However, if modules are not properly separated, numerous endpoints end up in the same place, making it difficult to scale reliably.
-- **Controller**: This pattern allows you to group multiple API endpoints and manage CRUD operations collectively, making it widely used by C# developers familiar with ASP.NET Core MVC. However, there is a concern that as functionality increases, the controllers themselves may become bloated.
+This library is divided into separate packages for the core components and the extensions.
+Depending on your development style and potential conflicts with other libraries, you can install only the packages you need.
 
-The REPR pattern helps build robust and scalable APIs by enforcing the structure of requests, responses, and endpoints through type and interface contracts, thereby preventing interference with other endpoints. It is considered to be highly compatible with the Vertical Slice Architecture pattern,
-enabling the creation of loosely coupled structures that are designed to evolve into modular monoliths or microservices.
-
-
-However, to implement the REPR pattern, I had to either wrap the Minimal API myself or rely on a library like FastEndpoints.
-That said, FastEndpoints is built on its own design philosophy, and while it is feature-rich, I found it to have a steep learning curve.
-As a result, I felt I needed a library that offered a minimal, explicit programming interface that respected the standard ASP.NET Core API, which led me to build one myself.
+- `AxisEndpoints`: Provides primitive interfaces, including the `IEndpoint` type, for implementing the REPR pattern.
+- `AxisEndpoints.Extensions.CsvHelper`: This extension integrates with [CsvHelper](https://joshclose.github.io/CsvHelper/) to enable CSV import and export safety. It is useful for adding type-safe CSV import and export functionality to applications under development.
 
 ## Installation
 
@@ -47,7 +76,27 @@ dotnet add <YourProject> package AxisEndpoints --source <LocalNupkgDirectory>
 
 *Planning*
 
-## How to use
+
+## Why? - The trade-offs of the three approaches
+
+There are three ways to implement a Web API in ASP.NET Core:
+Minimal API, Controller, and the REPR pattern. The REPR pattern is the third option, following Minimal API and Controller.
+The REPR pattern is a way to implement an API using three components: HTTP requests, responses, and endpoints, which serve as the entry points to the application.
+
+- **Minimal API**: It is simple and highly flexible. It also offers excellent performance and provides a programming interface that is familiar to developers coming from Python, TypeScript, and other languages.
+However, if modules are not properly separated, numerous endpoints end up in the same place, making it difficult to scale reliably.
+- **Controller**: This pattern allows you to group multiple API endpoints and manage CRUD operations collectively, making it widely used by C# developers familiar with ASP.NET Core MVC. However, there is a concern that as functionality increases, the controllers themselves may become bloated.
+
+- **REPR Pattern**: The REPR pattern helps build robust and scalable APIs by enforcing the structure of requests, responses, and endpoints through type and interface contracts, thereby preventing interference with other endpoints. It is considered to be highly compatible with the Vertical Slice Architecture pattern,
+enabling the creation of loosely coupled structures that are designed to evolve into modular monoliths or microservices.
+
+
+To implement REPR here, we had to either create a simple wrapper that wrapped the Minimal API ourselves or rely on a library such as [FastEndpoints](https://fast-endpoints.com/).
+While FastEndpoints is a powerful and excellent library, it is built on its own philosophy, which means its interfaces and level of abstraction differ from those of standard ASP.NET Core. As a result, I found the learning curve to be a bit steep.
+
+As a result, I felt I needed a library that offered a minimal, explicit programming interface that respected the standard ASP.NET Core API, which led me to build one myself.
+
+## Usage
 
 ### Setup on Program.cs
 
@@ -495,6 +544,10 @@ public class MyGroup : IEndpointGroup
 
 You can also implement custom filters that apply only to specific endpoints. This mechanism is similar to ASP.NET Core middleware, but whereas middleware applies to all requests, `IEndpointFilter` acts more like a hook that can be applied only to specific endpoints.
 
+## Author
+
+[sheepla](https://github.com/sheepla)
+
 ## License
 
-MIT
+See [LICENSE](./LICENSE) .
