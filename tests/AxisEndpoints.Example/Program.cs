@@ -1,4 +1,5 @@
 using AxisEndpoints.Extensions;
+using AxisEndpoints.Extensions.CsvHelper;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,7 @@ builder.Services.AddOpenApi();
 // marked AllowAnonymous for local testing purposes — see each endpoint's Configure()
 // for the authorization settings you would use in a real application.
 builder.Services.AddAxisEndpoints();
+builder.Services.AddAxisEndpointsCsvHelper();
 
 var app = builder.Build();
 
