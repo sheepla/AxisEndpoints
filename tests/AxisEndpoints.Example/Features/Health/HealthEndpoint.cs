@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace AxisEndpoints.Example.Features.Health;
 
 public class HealthResponse
@@ -27,9 +29,11 @@ public class HealthEndpoint : IEndpoint<HealthResponse>
 
     public Task HandleAsync(IResponseSender<HealthResponse> sender, CancellationToken cancel)
     {
-        return sender.SendAsync(
-            new HealthResponse { Status = "ok", Timestamp = DateTimeOffset.UtcNow },
-            cancel
-        );
+        return sender
+            .StatusCode(HttpStatusCode.OK)
+            .SendAsync(
+                new HealthResponse { Status = "ok", Timestamp = DateTimeOffset.UtcNow },
+                cancel
+            );
     }
 }
