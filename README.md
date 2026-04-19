@@ -31,6 +31,7 @@
     - [Accessing HTTP resources with EndpointContext](#accessing-http-resources-with-endpointcontext)
     - [Grouping multiple endpoints with IEndpointGroup](#grouping-multiple-endpoints-with-iendpointgroup)
     - [Adding custom filters with IEndpointFilter](#adding-custom-filters-with-iendpointfilter)
+  - [Acknowledgments](#acknowledgments)
   - [Author](#author)
   - [License](#license)
 
@@ -555,6 +556,11 @@ public class MyGroup : IEndpointGroup
 ```
 
 You can also implement custom filters that apply only to specific endpoints. This mechanism is similar to ASP.NET Core middleware, but whereas middleware applies to all requests, `IEndpointFilter` acts more like a hook that can be applied only to specific endpoints.
+
+## Acknowledgments
+
+- [FastEndpoints](https://fast-endpoints.com/): This implementation was extremely helpful in implementing the REPR pattern.
+- [Architecting ASP.NET Core Applications (Packt Pub)](https://www.packtpub.com/en-us/product/architecting-aspnet-core-applications-9781805129301): This book provided valuable insights into design principles in .NET and various design patterns.
 
 ## Author
 
