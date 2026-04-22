@@ -1,8 +1,6 @@
 using System.ComponentModel.DataAnnotations;
-using AxisEndpoints;
 using AxisEndpoints.Extensions.CsvHelper;
 using CsvHelper.Configuration.Attributes;
-using Microsoft.AspNetCore.Http;
 
 namespace AxisEndpoints.Example.Features.Users.ImportFromCsv;
 
