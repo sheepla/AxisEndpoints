@@ -4,12 +4,12 @@ namespace AxisEndpoints.Example.Features.Users.Update;
 
 /// <summary>
 /// Demonstrates:
-///   - IEndpoint&lt;TRequest, TResponse&gt; with custom BindAsync (multipart/form-data)
+///   - IEndpoint&lt;TRequest, TResult&gt; with custom BindAsync (multipart/form-data)
 ///   - RequireAuthorization(string policyName) in a real app:
 ///       config.Put("/{id}").RequireAuthorization("CanManageUsers")
 ///     where "CanManageUsers" is defined in Program.cs via AddAuthorization.
 /// </summary>
-public class UpdateUserEndpoint : IEndpoint<UpdateUserRequest, UserResponse>
+public class UpdateUserEndpoint : IEndpoint<UpdateUserRequest, Response<UserResponse>>
 {
     public void Configure(IEndpointConfiguration config)
     {
@@ -24,8 +24,7 @@ public class UpdateUserEndpoint : IEndpoint<UpdateUserRequest, UserResponse>
             .AllowAnonymous();
     }
 
-    public Task HandleAsync(
-        IResponseSender<UserResponse> sender,
+    public Task<Response<UserResponse>> HandleAsync(
         UpdateUserRequest request,
         CancellationToken cancel
     )
@@ -34,14 +33,17 @@ public class UpdateUserEndpoint : IEndpoint<UpdateUserRequest, UserResponse>
             ? $" (avatar: {request.Avatar.FileName}, {request.Avatar.Length} bytes)"
             : string.Empty;
 
-        var updated = new UserResponse
-        {
-            Id = request.Id,
-            Name = request.Name + avatarNote,
-            Email = request.Email,
-            Role = "User",
-        };
-
-        return sender.SendAsync(updated, cancel);
+        return Task.FromResult(
+            new Response<UserResponse>
+            {
+                Body = new UserResponse
+                {
+                    Id = request.Id,
+                    Name = request.Name + avatarNote,
+                    Email = request.Email,
+                    Role = "User",
+                },
+            }
+        );
     }
 }

@@ -147,7 +147,7 @@ internal static class EndpointRegistry
                 endpointType,
                 config,
                 requestType: args[0],
-                responseType: args[1],
+                resultType: args[1],
                 options: options
             );
         }
@@ -156,11 +156,11 @@ internal static class EndpointRegistry
             .GetInterfaces()
             .First(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEndpoint<>));
 
-        return MapResponseOnlyRoute(
+        return MapNoRequestRoute(
             builder,
             endpointType,
             config,
-            responseType: oneParam.GetGenericArguments()[0]
+            resultType: oneParam.GetGenericArguments()[0]
         );
     }
 
@@ -169,7 +169,7 @@ internal static class EndpointRegistry
         Type endpointType,
         EndpointConfiguration config,
         Type requestType,
-        Type responseType,
+        Type resultType,
         AxisEndpointsOptions options
     )
     {
@@ -184,8 +184,8 @@ internal static class EndpointRegistry
         //   properties into individual route/query parameters for OpenAPI metadata generation.
         //   Types that define BindAsync fall back to (HttpContext, CancellationToken) binding.
         var handler = usesBody
-            ? MakeBodyHandler(endpointType, requestType, responseType)
-            : MakeParameterHandler(endpointType, requestType, responseType);
+            ? MakeBodyHandler(endpointType, requestType, resultType)
+            : MakeParameterHandler(endpointType, requestType, resultType);
 
         var routeHandlerBuilder = config.Method switch
         {
@@ -207,18 +207,18 @@ internal static class EndpointRegistry
             routeHandlerBuilder.AddEndpointFilter(filter);
         }
 
-        config.ResponseType = responseType;
+        config.ResponseType = resultType;
         return routeHandlerBuilder;
     }
 
-    private static RouteHandlerBuilder MapResponseOnlyRoute(
+    private static RouteHandlerBuilder MapNoRequestRoute(
         IEndpointRouteBuilder builder,
         Type endpointType,
         EndpointConfiguration config,
-        Type responseType
+        Type resultType
     )
     {
-        var handler = MakeNoRequestHandler(endpointType, responseType);
+        var handler = MakeNoRequestHandler(endpointType, resultType);
 
         var routeHandlerBuilder = config.Method switch
         {
@@ -231,27 +231,23 @@ internal static class EndpointRegistry
             _ => throw new InvalidOperationException($"Unsupported HTTP method: {config.Method}"),
         };
 
-        config.ResponseType = responseType;
+        config.ResponseType = resultType;
         return routeHandlerBuilder;
     }
 
     // --- Delegate factories ---
 
-    private static Delegate MakeBodyHandler(
-        Type endpointType,
-        Type requestType,
-        Type responseType
-    ) =>
+    private static Delegate MakeBodyHandler(Type endpointType, Type requestType, Type resultType) =>
         (Delegate)
             typeof(EndpointRegistry)
                 .GetMethod(nameof(CreateBodyHandler), BindingFlags.NonPublic | BindingFlags.Static)!
-                .MakeGenericMethod(endpointType, requestType, responseType)
+                .MakeGenericMethod(endpointType, requestType, resultType)
                 .Invoke(null, [])!;
 
     private static Delegate MakeParameterHandler(
         Type endpointType,
         Type requestType,
-        Type responseType
+        Type resultType
     )
     {
         // Types with BindAsync handle their own binding — wrap in a context-only handler.
@@ -259,7 +255,7 @@ internal static class EndpointRegistry
             requestType.GetMethod(
                 "BindAsync",
                 BindingFlags.Public | BindingFlags.Static,
-                [typeof(HttpContext), typeof(ParameterInfo)]
+                [typeof(HttpContext)]
             )
             is not null;
 
@@ -271,7 +267,7 @@ internal static class EndpointRegistry
                         nameof(CreateBindAsyncHandler),
                         BindingFlags.NonPublic | BindingFlags.Static
                     )!
-                    .MakeGenericMethod(endpointType, requestType, responseType)
+                    .MakeGenericMethod(endpointType, requestType, resultType)
                     .Invoke(null, [])!;
         }
 
@@ -283,39 +279,75 @@ internal static class EndpointRegistry
                     nameof(CreateAsParametersHandler),
                     BindingFlags.NonPublic | BindingFlags.Static
                 )!
-                .MakeGenericMethod(endpointType, requestType, responseType)
+                .MakeGenericMethod(endpointType, requestType, resultType)
                 .Invoke(null, [])!;
     }
 
-    private static Delegate MakeNoRequestHandler(Type endpointType, Type responseType) =>
+    private static Delegate MakeNoRequestHandler(Type endpointType, Type resultType) =>
         (Delegate)
             typeof(EndpointRegistry)
                 .GetMethod(
                     nameof(CreateNoRequestHandler),
                     BindingFlags.NonPublic | BindingFlags.Static
                 )!
-                .MakeGenericMethod(endpointType, responseType)
+                .MakeGenericMethod(endpointType, resultType)
                 .Invoke(null, [])!;
+
+    // --- Result conversion ---
+
+    /// <summary>
+    /// Converts the value returned from HandleAsync to an IResult.
+    /// TResult is either Response&lt;TBody&gt; (serialized as JSON) or an IResult implementation
+    /// (executed directly). The branch is a static type check resolved once per endpoint
+    /// registration, not on every request.
+    /// </summary>
+    private static IResult ToIResult<TResult>(TResult result)
+    {
+        if (result is IResult directResult)
+        {
+            return directResult;
+        }
+
+        // TResult is Response<TBody>: unwrap via the open-generic ToResult method.
+        // This avoids reflection on the hot path by resolving the method once at registration time.
+        // Called rarely enough that the cast is acceptable here.
+        var resultType = typeof(TResult);
+        if (resultType.IsGenericType && resultType.GetGenericTypeDefinition() == typeof(Response<>))
+        {
+            var bodyType = resultType.GetGenericArguments()[0];
+            var toResult = typeof(ResponseExecutor)
+                .GetMethod(
+                    nameof(ResponseExecutor.ToResult),
+                    BindingFlags.NonPublic | BindingFlags.Static
+                )!
+                .MakeGenericMethod(bodyType);
+            return (IResult)toResult.Invoke(null, [result])!;
+        }
+
+        throw new InvalidOperationException(
+            $"HandleAsync returned an unsupported type '{resultType.Name}'. "
+                + $"Return Response<TBody> for JSON responses or an IResult implementation for custom responses."
+        );
+    }
 
     // --- Concrete handler implementations ---
 
     /// <summary>
     /// POST/PUT/PATCH: TRequest bound from the JSON body.
-    /// Returns Task&lt;IResult&gt; so Minimal API infers TResponse for OpenAPI response schema.
+    /// Returns Task&lt;IResult&gt; so Minimal API infers TResult for OpenAPI response schema.
     /// </summary>
     private static Func<TRequest, HttpContext, CancellationToken, Task<IResult>> CreateBodyHandler<
         TEndpoint,
         TRequest,
-        TResponse
+        TResult
     >()
-        where TEndpoint : class, IEndpoint<TRequest, TResponse>
+        where TEndpoint : class, IEndpoint<TRequest, TResult>
     {
         return async (request, context, cancel) =>
         {
             var endpoint = context.RequestServices.GetRequiredService<TEndpoint>();
-            var sender = new ResponseSender<TResponse>();
-            await endpoint.HandleAsync(sender, request, cancel);
-            return sender.Result ?? Results.Ok();
+            var result = await endpoint.HandleAsync(request, cancel);
+            return ToIResult(result);
         };
     }
 
@@ -329,62 +361,60 @@ internal static class EndpointRegistry
         HttpContext,
         CancellationToken,
         Task<IResult>
-    > CreateAsParametersHandler<TEndpoint, TRequest, TResponse>()
-        where TEndpoint : class, IEndpoint<TRequest, TResponse>
+    > CreateAsParametersHandler<TEndpoint, TRequest, TResult>()
+        where TEndpoint : class, IEndpoint<TRequest, TResult>
     {
         return async ([AsParameters] request, context, cancel) =>
         {
             var endpoint = context.RequestServices.GetRequiredService<TEndpoint>();
-            var sender = new ResponseSender<TResponse>();
-            await endpoint.HandleAsync(sender, request, cancel);
-            return sender.Result ?? Results.Ok();
+            var result = await endpoint.HandleAsync(request, cancel);
+            return ToIResult(result);
         };
     }
 
     /// <summary>
     /// GET/DELETE/HEAD with BindAsync: the type handles its own binding from HttpContext.
+    /// BindAsync(HttpContext) — the single-parameter overload — is used here.
     /// OpenAPI parameter metadata is not inferred for these — document manually if needed.
     /// </summary>
     private static Func<HttpContext, CancellationToken, Task<IResult>> CreateBindAsyncHandler<
         TEndpoint,
         TRequest,
-        TResponse
+        TResult
     >()
-        where TEndpoint : class, IEndpoint<TRequest, TResponse>
+        where TEndpoint : class, IEndpoint<TRequest, TResult>
     {
         return async (context, cancel) =>
         {
             var bindMethod = typeof(TRequest).GetMethod(
                 "BindAsync",
                 BindingFlags.Public | BindingFlags.Static,
-                [typeof(HttpContext), typeof(ParameterInfo)]
+                [typeof(HttpContext)]
             )!;
 
-            var result = bindMethod.Invoke(null, [context, null!]);
-            var request = await (ValueTask<TRequest>)result!;
+            var task = (ValueTask<TRequest>)bindMethod.Invoke(null, [context])!;
+            var request = await task;
 
             var endpoint = context.RequestServices.GetRequiredService<TEndpoint>();
-            var sender = new ResponseSender<TResponse>();
-            await endpoint.HandleAsync(sender, request, cancel);
-            return sender.Result ?? Results.Ok();
+            var result = await endpoint.HandleAsync(request, cancel);
+            return ToIResult(result);
         };
     }
 
     /// <summary>
-    /// IEndpoint&lt;TResponse&gt;: no request parameters at all.
+    /// IEndpoint&lt;TResult&gt;: no request parameters at all.
     /// </summary>
     private static Func<HttpContext, CancellationToken, Task<IResult>> CreateNoRequestHandler<
         TEndpoint,
-        TResponse
+        TResult
     >()
-        where TEndpoint : class, IEndpoint<TResponse>
+        where TEndpoint : class, IEndpoint<TResult>
     {
         return async (context, cancel) =>
         {
             var endpoint = context.RequestServices.GetRequiredService<TEndpoint>();
-            var sender = new ResponseSender<TResponse>();
-            await endpoint.HandleAsync(sender, cancel);
-            return sender.Result ?? Results.Ok();
+            var result = await endpoint.HandleAsync(cancel);
+            return ToIResult(result);
         };
     }
 

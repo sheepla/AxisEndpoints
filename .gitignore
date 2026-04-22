@@ -484,6 +484,9 @@ $RECYCLE.BIN/
 
 ######################################
 
+# lscache
+*.lscache
+
 # AI Agent Workspace
 .agent/
 

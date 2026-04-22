@@ -5,11 +5,11 @@ namespace AxisEndpoints.Example.Features.Users.FindById;
 
 /// <summary>
 /// Demonstrates:
-///   - IEndpoint&lt;TRequest, TResponse&gt; with [FromRoute] binding (GET)
+///   - IEndpoint&lt;TRequest, TResult&gt; with [FromRoute] binding (GET)
 ///   - EndpointContext: reading the Accept-Language request header
-///   - Conditional 404 via sender.StatusCode(HttpStatusCode.NotFound)
+///   - Conditional 404 response
 /// </summary>
-public class FindByIdEndpoint : IEndpoint<FindByIdRequest, UserResponse>
+public class FindByIdEndpoint : IEndpoint<FindByIdRequest, Response<UserResponse>>
 {
     private readonly EndpointContext _context;
 
@@ -29,8 +29,7 @@ public class FindByIdEndpoint : IEndpoint<FindByIdRequest, UserResponse>
             );
     }
 
-    public Task HandleAsync(
-        IResponseSender<UserResponse> sender,
+    public Task<Response<UserResponse>> HandleAsync(
         FindByIdRequest request,
         CancellationToken cancel
     )
@@ -41,28 +40,32 @@ public class FindByIdEndpoint : IEndpoint<FindByIdRequest, UserResponse>
         // Dummy: only ID 1 exists. Any other ID returns 404.
         if (request.Id != 1)
         {
-            return sender
-                .StatusCode(HttpStatusCode.NotFound)
-                .SendAsync(
-                    new UserResponse
+            return Task.FromResult(
+                new Response<UserResponse>
+                {
+                    StatusCode = HttpStatusCode.NotFound,
+                    Body = new UserResponse
                     {
                         Id = 0,
                         Name = string.Empty,
                         Email = string.Empty,
                         Role = string.Empty,
                     },
-                    cancel
-                );
+                }
+            );
         }
 
-        var user = new UserResponse
-        {
-            Id = 1,
-            Name = language.StartsWith("ja") ? "山田 太郎" : "Alice",
-            Email = "alice@example.com",
-            Role = "User",
-        };
-
-        return sender.SendAsync(user, cancel);
+        return Task.FromResult(
+            new Response<UserResponse>
+            {
+                Body = new UserResponse
+                {
+                    Id = 1,
+                    Name = language.StartsWith("ja") ? "山田 太郎" : "Alice",
+                    Email = "alice@example.com",
+                    Role = "User",
+                },
+            }
+        );
     }
 }

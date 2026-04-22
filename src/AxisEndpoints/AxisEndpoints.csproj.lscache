@@ -72,12 +72,13 @@ Internal/
  EndpointConfiguration.cs
  EndpointGroupConfiguration.cs
  EndpointRegistry.cs
- ResponseSender.cs
+ ResponseExecutor.cs
 IResponseSender.cs
 obj/Debug/net10.0/
  .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
  AxisEndpoints.AssemblyInfo.cs
  AxisEndpoints.GlobalUsings.g.cs
+Response.cs
 
 [metadataReferences]
 C:/Program Files/dotnet/packs/Microsoft.AspNetCore.App.Ref/10.0.2/ref/net10.0/

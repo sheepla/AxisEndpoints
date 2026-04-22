@@ -1,5 +1,3 @@
-using System.Net;
-
 namespace AxisEndpoints.Example.Features.Health;
 
 public class HealthResponse
@@ -10,10 +8,10 @@ public class HealthResponse
 
 /// <summary>
 /// Demonstrates:
-///   - IEndpoint&lt;TResponse&gt; (no request parameters)
+///   - IEndpoint&lt;TResult&gt; (no request parameters)
 ///   - AllowAnonymous
 /// </summary>
-public class HealthEndpoint : IEndpoint<HealthResponse>
+public class HealthEndpoint : IEndpoint<Response<HealthResponse>>
 {
     public void Configure(IEndpointConfiguration config)
     {
@@ -27,13 +25,13 @@ public class HealthEndpoint : IEndpoint<HealthResponse>
             .AllowAnonymous();
     }
 
-    public Task HandleAsync(IResponseSender<HealthResponse> sender, CancellationToken cancel)
+    public Task<Response<HealthResponse>> HandleAsync(CancellationToken cancel)
     {
-        return sender
-            .StatusCode(HttpStatusCode.OK)
-            .SendAsync(
-                new HealthResponse { Status = "ok", Timestamp = DateTimeOffset.UtcNow },
-                cancel
-            );
+        return Task.FromResult(
+            new Response<HealthResponse>
+            {
+                Body = new HealthResponse { Status = "ok", Timestamp = DateTimeOffset.UtcNow },
+            }
+        );
     }
 }
