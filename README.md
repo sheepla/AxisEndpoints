@@ -8,18 +8,19 @@
   - [Table of Contents](#table-of-contents)
   - [About](#about)
   - [Features](#features)
-  - [Packages structure](#packages-structure)
+  - [Packages](#packages)
   - [Installation](#installation)
     - [Install from local nupkg](#install-from-local-nupkg)
     - [Install from nuget.org](#install-from-nugetorg)
-  - [Why? - The trade-offs of the three approaches](#why---the-trade-offs-of-the-three-approaches)
+  - [Why? — Choosing between Minimal API, Controllers, and the REPR Pattern](#why--choosing-between-minimal-api-controllers-and-the-repr-pattern)
   - [Usage](#usage)
-    - [Setup on Program.cs](#setup-on-programcs)
+    - [Setup in Program.cs](#setup-in-programcs)
+    - [Response type quick reference](#response-type-quick-reference)
     - [Defining endpoints with IEndpoint](#defining-endpoints-with-iendpoint)
-      - [`IEndpoint<TRequest, TResponse>` — request body + response](#iendpointtrequest-tresponse--request-body--response)
-      - [`IEndpoint<TRequest, TResponse>` — route / query parameters + response](#iendpointtrequest-tresponse--route--query-parameters--response)
-      - [`IEndpoint<TResponse>` — no parameters](#iendpointtresponse--no-parameters)
-      - [`IEndpoint<TRequest, EmptyResponse>` — no response body](#iendpointtrequest-emptyresponse--no-response-body)
+      - [JSON response — `Response<TBody>`](#json-response--responsetbody)
+      - [No response body — `Response<EmptyResponse>`](#no-response-body--responseemptyresponse)
+      - [No request parameters — `IEndpoint<TResult>`](#no-request-parameters--iendpointtresult)
+      - [Route and query parameters](#route-and-query-parameters)
     - [Validation with DataAnnotations](#validation-with-dataannotations)
     - [Validation with FluentValidation](#validation-with-fluentvalidation)
     - [Authorization](#authorization)
@@ -28,51 +29,53 @@
       - [Require a dynamically constructed policy](#require-a-dynamically-constructed-policy)
       - [Allow anonymous access](#allow-anonymous-access)
       - [Group-level authorization](#group-level-authorization)
-    - [Accessing HTTP resources with EndpointContext](#accessing-http-resources-with-endpointcontext)
-    - [Grouping multiple endpoints with IEndpointGroup](#grouping-multiple-endpoints-with-iendpointgroup)
-    - [Adding custom filters with IEndpointFilter](#adding-custom-filters-with-iendpointfilter)
-  - [Acknowledgments](#acknowledgments)
+    - [Accessing HTTP context](#accessing-http-context)
+    - [Grouping multiple endpoints](#grouping-multiple-endpoints)
+    - [Adding custom filters](#adding-custom-filters)
+  - [CSV extension — AxisEndpoints.Extensions.CsvHelper](#csv-extension--axisendpointsextensionscsvhelper)
+    - [Setup](#setup)
+    - [CSV import — `CsvRequest<TRow>`](#csv-import--csvrequesttrow)
+    - [CSV export — `CsvResponse<TRow>`](#csv-export--csvresponsetrow)
+    - [Per-row validation](#per-row-validation)
+    - [Custom column mapping with ClassMap](#custom-column-mapping-with-classmap)
   - [Author](#author)
   - [License](#license)
 
 
 ## About
 
-**AxisEndpoints** is a DSL for implementing the Request-Endpoint-Response a.k.a. REPR pattern. It provides **Axis** which consolidates the endpoints of your application! 
+**AxisEndpoints** is a DSL for implementing the Request-Endpoint-Response (REPR) pattern in ASP.NET Core. It consolidates each API endpoint into a self-contained class with a clear, explicit programming interface.
 
-- **Clear and explicit programming interface**: the REPR pattern can be implemented in a simple and robust way.
-- **Modular package structure**: Since extensions are provided as separate packages, you can include only the features you truly need in your application.
-- **A gentle learning curve**: AxisEndpoints is built as a lightweight wrapper around the Minimal API. Each primitive is designed based on the Minimal API, so I think that developers familiar with the Minimal API will find it relatively easy to learn.
-- **Well-suited for Vertical Slice Architecture**: The REPR pattern is ideal for [Vertical Slice Architecture](https://learn.microsoft.com/en-us/shows/on-dotnet/on-dotnet-live-clean-architecture-vertical-slices-and-modular-monoliths-oh-my), which involves slicing applications into functional units. Since each API endpoint operates as a self-contained unit, this approach ensures scalability and loose coupling between slices.
+- **Clear and explicit programming interface**: each endpoint declares its request type, result type, route, and metadata in one place.
+- **Modular package structure**: extensions are provided as separate packages so you can include only the features you need.
+- **Gentle learning curve**: AxisEndpoints is a lightweight wrapper around the Minimal API. Developers familiar with Minimal API should find it easy to adopt.
+- **Well-suited for Vertical Slice Architecture**: the REPR pattern is a natural fit for [Vertical Slice Architecture](https://learn.microsoft.com/en-us/shows/on-dotnet/on-dotnet-live-clean-architecture-vertical-slices-and-modular-monoliths-oh-my), where each feature is a self-contained unit with loose coupling between slices.
 
 ## Features
 
-- **OpenAPI-first and type safe**: When building a large-scale API, automatic OpenAPI generation is practically a must. Since type annotation for requests and responses is enforced and you can add summaries and descriptions for each endpoint, your OpenAPI documentation becomes more detailed. This makes it easier to integrate with frontend applications written in TypeScript and other API clients, as well as to collaborate with other developers. Have you ever forgotten to include `TypedResults` on Minimal API or `ActionResult<T>` in Controllers? That won't happen anymore! ✨
-- **Automatic validation with DataAnnotations**: It includes built-in attribute-based automatic validation using `System.ComponentModels.DataAnnotations`.
-- **Multiple endpoints grouping**: You can apply common routing and filters to multiple endpoints. This is useful for building APIs with a hierarchical structure.
-- **Custom filter configuration**: You can define specific processing steps common to multiple endpoints as filters. This differs from the standard middleware mechanism provided by ASP.NET Core, as it allows you to inject logic that applies only to specific endpoints or endpoint groups.
-- **Type-safe CSV input and output: (optional)**: As an extension, a package that supports type-safe CSV input and output is provided separately from the core components. 
+- **OpenAPI-first and type-safe**: request and response types are enforced by the interface, and per-endpoint summaries and descriptions are supported. OpenAPI output is generated automatically without requiring `TypedResults` or `ActionResult<T>` annotations.
+- **Automatic validation with DataAnnotations**: built-in attribute-based validation using `System.ComponentModel.DataAnnotations` runs automatically before `HandleAsync` is called.
+- **Endpoint grouping**: apply a shared route prefix, tags, authorization policy, and filters to multiple endpoints at once.
+- **Custom filter support**: attach `IEndpointFilter` implementations to individual endpoints or groups, independently of the global middleware pipeline.
+- **Type-safe CSV input and output** *(optional)*: the `AxisEndpoints.Extensions.CsvHelper` extension package adds typed CSV import and export without pulling CsvHelper into the core.
 
-## Packages structure
+## Packages
 
-This library is divided into separate packages for the core components and the extensions.
-Depending on your development style and potential conflicts with other libraries, you can install only the packages you need.
-
-- `AxisEndpoints`: Provides primitive interfaces, including the `IEndpoint` type, for implementing the REPR pattern.
-- `AxisEndpoints.Extensions.CsvHelper`: This extension integrates with [CsvHelper](https://joshclose.github.io/CsvHelper/) to enable CSV import and export safety. It is useful for adding type-safe CSV import and export functionality to applications under development.
+| Package                              | Description                                                                                                                                                    |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AxisEndpoints`                      | Core package. Provides `IEndpoint<TRequest, TResult>` and related primitives.                                                                                  |
+| `AxisEndpoints.Extensions.CsvHelper` | Optional. Integrates [CsvHelper](https://joshclose.github.io/CsvHelper/) for typed CSV import (`CsvRequest<TRow>`) and streaming export (`CsvResponse<TRow>`). |
 
 ## Installation
 
 ### Install from local nupkg
 
 ```sh
-# Create the nuget package
+# Build the NuGet package
 dotnet pack src/AxisEndpoints/AxisEndpoints.csproj -o <LocalNupkgDirectory>
-dotnet pack src/AxisEndpoints.Extensions.CsvHelper/AxisEndpoints.Extensions.CsvHelper.csproj -o <LocalNupkgDirectory>
 
-# Install AxisEndpoints from local nupkg
+# Add it to your project
 dotnet add <YourProject> package AxisEndpoints --source <LocalNupkgDirectory>
-dotnet add <YourProject> package AxisEndpoints.Extensions.CsvHelper --source <LocalNupkgDirectory>
 ```
 
 ### Install from nuget.org
@@ -80,34 +83,30 @@ dotnet add <YourProject> package AxisEndpoints.Extensions.CsvHelper --source <Lo
 *Planning*
 
 
-## Why? - The trade-offs of the three approaches
+## Why? — Choosing between Minimal API, Controllers, and the REPR Pattern
 
-There are three ways to implement a Web API in ASP.NET Core:
-Minimal API, Controller, and the REPR pattern. The REPR pattern is the third option, following Minimal API and Controller.
-The REPR pattern is a way to implement an API using three components: HTTP requests, responses, and endpoints, which serve as the entry points to the application.
+ASP.NET Core offers three approaches to building Web APIs. Each involves different trade-offs:
 
-- **Minimal API**: It is simple and highly flexible. It also offers excellent performance and provides a programming interface that is familiar to developers coming from Python, TypeScript, and other languages.
-However, if modules are not properly separated, numerous endpoints end up in the same place, making it difficult to scale reliably.
-- **Controller**: This pattern allows you to group multiple API endpoints and manage CRUD operations collectively, making it widely used by C# developers familiar with ASP.NET Core MVC. However, there is a concern that as functionality increases, the controllers themselves may become bloated.
+|                     | Minimal API                                   | Controller                                  | REPR Pattern (AxisEndpoints)                   |
+| ------------------- | --------------------------------------------- | ------------------------------------------- | ---------------------------------------------- |
+| **Structure**       | Functions registered inline                   | Methods grouped in a class                  | One class per endpoint                         |
+| **Scalability**     | ⚠ Can become hard to manage as endpoints grow | ⚠ Controllers can grow bloated over time    | ✅ Each endpoint stays self-contained           |
+| **Coupling**        | Low — but no enforced structure               | Medium — CRUD operations share a controller | Low — slices are independent by design         |
+| **Learning curve**  | Low                                           | Medium (MVC conventions)                    | Medium (built on Minimal API)                  |
+| **Best suited for** | Small services, prototypes                    | CRUD-heavy APIs familiar to MVC developers  | Feature-rich APIs, Vertical Slice Architecture |
 
-- **REPR Pattern**: The REPR pattern helps build robust and scalable APIs by enforcing the structure of requests, responses, and endpoints through type and interface contracts, thereby preventing interference with other endpoints. It is considered to be highly compatible with the Vertical Slice Architecture pattern,
-enabling the creation of loosely coupled structures that are designed to evolve into modular monoliths or microservices.
+The REPR pattern is a good choice when:
 
+- Your API has many endpoints that grow independently of each other.
+- You are applying Vertical Slice Architecture and want each feature to be self-contained.
+- You want the compiler to enforce that every endpoint declares its request and response types.
+- You want OpenAPI documentation to stay accurate without manual annotations.
 
-To implement REPR here, we had to either create a simple wrapper that wrapped the Minimal API ourselves or rely on a library such as [FastEndpoints](https://fast-endpoints.com/).
-While FastEndpoints is a powerful and excellent library, it is built on its own philosophy, which means its interfaces and level of abstraction differ from those of standard ASP.NET Core. As a result, I found the learning curve to be a bit steep.
-
-As a result, I felt I needed a library that offered a minimal, explicit programming interface that respected the standard ASP.NET Core API, which led me to build one myself.
+To implement the REPR pattern in ASP.NET Core, you can either write a thin wrapper around the Minimal API yourself, or use a library such as [FastEndpoints](https://fast-endpoints.com/). FastEndpoints is powerful, but its abstractions diverge noticeably from standard ASP.NET Core conventions, which steepens the learning curve. AxisEndpoints takes a different approach: it stays close to the Minimal API surface, so the concepts you already know continue to apply.
 
 ## Usage
 
-This section explains the basic usage commonly found in general Web API development, as well as the fundamental primitives provided by AxisEndpoints.
-
-For practical examples, please also refer to the sample application available below.
-
-> [README - AxisEndpoints.Example](./tests/AxisEndpoints.Example/README.md)
-
-### Setup on Program.cs
+### Setup in Program.cs
 
 Call `AddAxisEndpoints()` on the service collection and `MapAxisEndpoints()` on the application. Both methods scan the entry assembly automatically. Pass an `Assembly` argument to target a specific project.
 
@@ -117,7 +116,7 @@ using AxisEndpoints.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.AddAxisEndpoints(); // Discovers and registers all endpoints via DI
+builder.Services.AddAxisEndpoints(); // Discovers and registers all endpoints
 
 var app = builder.Build();
 
@@ -127,11 +126,36 @@ app.MapAxisEndpoints(); // Maps all discovered endpoints to the Minimal API pipe
 app.Run();
 ```
 
+### Response type quick reference
+
+`HandleAsync` returns `Task<TResult>`. The value of `TResult` determines how the response is written:
+
+| Scenario                         | Return type                  | Example                                                                                  |
+| -------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------- |
+| JSON response                    | `Response<TBody>`            | `return new Response<UserResponse> { Body = user }`                                      |
+| JSON with status code or headers | `Response<TBody>`            | `return new Response<UserResponse> { StatusCode = HttpStatusCode.Created, Body = user }` |
+| No response body                 | `Response<EmptyResponse>`    | `return Response.NoContent`                                                              |
+| CSV export or other stream       | `IResult` implementation     | `return Task.FromResult(CsvResponse.From(rows))`                                         |
+| Fully custom response            | Any `IResult` implementation | `return Task.FromResult(new MyCustomResult(...))`                                        |
+
+`Response<TBody>` has three properties. Only `Body` is required:
+
+```csharp
+new Response<UserResponse>
+{
+    StatusCode = HttpStatusCode.Created,          // defaults to 200 OK
+    Headers    = [("Location", $"/users/{id}")],  // defaults to empty
+    Body       = new UserResponse { Id = id },    // required
+}
+```
+
+The static shorthands `Response.Empty` (200 OK, no body) and `Response.NoContent` (204 No Content) cover the most common no-body cases.
+
 ### Defining endpoints with IEndpoint
 
-#### `IEndpoint<TRequest, TResponse>` — request body + response
+#### JSON response — `Response<TBody>`
 
-Use for POST, PUT, and PATCH endpoints. `TRequest` is bound from the JSON request body.
+Use `IEndpoint<TRequest, Response<TBody>>` for POST, PUT, and PATCH endpoints where `TRequest` is bound from the JSON request body.
 
 ```csharp
 public class CreateUserRequest
@@ -145,7 +169,7 @@ public class CreateUserResponse
     public required int Id { get; init; }
 }
 
-public class CreateUserEndpoint : IEndpoint<CreateUserRequest, CreateUserResponse>
+public class CreateUserEndpoint : IEndpoint<CreateUserRequest, Response<CreateUserResponse>>
 {
     private readonly IUserRepository _repository;
 
@@ -158,20 +182,71 @@ public class CreateUserEndpoint : IEndpoint<CreateUserRequest, CreateUserRespons
             .Summary("Create a new user");
     }
 
-    public async Task HandleAsync(
-        IResponseSender<CreateUserResponse> sender,
+    public async Task<Response<CreateUserResponse>> HandleAsync(
         CreateUserRequest request,
         CancellationToken cancel)
     {
         var id = await _repository.CreateAsync(request.Name, request.Email, cancel);
-        await sender.StatusCode(HttpStatusCode.Created).SendAsync(new CreateUserResponse { Id = id }, cancel);
+
+        return new Response<CreateUserResponse>
+        {
+            StatusCode = HttpStatusCode.Created,
+            Headers    = [("Location", $"/users/{id}")],
+            Body       = new CreateUserResponse { Id = id },
+        };
     }
 }
 ```
 
-#### `IEndpoint<TRequest, TResponse>` — route / query parameters + response
+#### No response body — `Response<EmptyResponse>`
 
-For GET and DELETE, `TRequest` is bound from route values and query string instead of the body. Annotate properties with `[FromRoute]` or `[FromQuery]` to clarify the source.
+Use `Response<EmptyResponse>` for endpoints that return no body. The `Response.NoContent` shorthand returns 204 No Content in a single expression.
+
+```csharp
+public class DeleteUserEndpoint : IEndpoint<DeleteUserRequest, Response<EmptyResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Delete("/users/{id}").Summary("Delete a user");
+    }
+
+    public Task<Response<EmptyResponse>> HandleAsync(
+        DeleteUserRequest request,
+        CancellationToken cancel)
+    {
+        // delete user ...
+        return Task.FromResult(Response.NoContent);
+    }
+}
+```
+
+`Response.Empty` is the 200 OK equivalent for the same no-body pattern.
+
+#### No request parameters — `IEndpoint<TResult>`
+
+Use `IEndpoint<TResult>` when the endpoint takes no parameters at all. If query parameters are needed, define a request type with `[FromQuery]` properties and use `IEndpoint<TRequest, TResult>` instead.
+
+```csharp
+public class HealthEndpoint : IEndpoint<Response<HealthResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Get("/health").AllowAnonymous();
+    }
+
+    public Task<Response<HealthResponse>> HandleAsync(CancellationToken cancel)
+    {
+        return Task.FromResult(new Response<HealthResponse>
+        {
+            Body = new HealthResponse { Status = "ok", Timestamp = DateTimeOffset.UtcNow },
+        });
+    }
+}
+```
+
+#### Route and query parameters
+
+For GET and DELETE, `TRequest` is bound from route values and the query string rather than the request body. Annotate properties with `[FromRoute]` or `[FromQuery]` to clarify the binding source.
 
 ```csharp
 public class GetUserRequest
@@ -186,7 +261,7 @@ public class GetUserResponse
     public required string Name { get; init; }
 }
 
-public class GetUserEndpoint : IEndpoint<GetUserRequest, GetUserResponse>
+public class GetUserEndpoint : IEndpoint<GetUserRequest, Response<GetUserResponse>>
 {
     public void Configure(IEndpointConfiguration config)
     {
@@ -195,63 +270,41 @@ public class GetUserEndpoint : IEndpoint<GetUserRequest, GetUserResponse>
             .Summary("Get a user by ID");
     }
 
-    public async Task HandleAsync(
-        IResponseSender<GetUserResponse> sender,
+    public async Task<Response<GetUserResponse>> HandleAsync(
         GetUserRequest request,
         CancellationToken cancel)
     {
-        // fetch user ...
-        await sender.SendAsync(new GetUserResponse { Id = request.Id, Name = "Alice" }, cancel);
+        var user = await _repository.FindByIdAsync(request.Id, cancel);
+
+        if (user is null)
+        {
+            return new Response<GetUserResponse>
+            {
+                StatusCode = HttpStatusCode.NotFound,
+                Body       = new GetUserResponse { Id = 0, Name = string.Empty },
+            };
+        }
+
+        return new Response<GetUserResponse>
+        {
+            Body = new GetUserResponse { Id = user.Id, Name = user.Name },
+        };
     }
 }
 ```
 
-#### `IEndpoint<TResponse>` — no parameters
-
-Use only when the endpoint truly takes no parameters at all. If you need query parameters, define a request type with `[FromQuery]` and use `IEndpoint<TRequest, TResponse>` instead.
+For custom binding (e.g. multipart/form-data), implement the Minimal API `BindAsync` convention on the request type. AxisEndpoints detects it automatically:
 
 ```csharp
-public class HealthResponse { public required string Status { get; init; } }
-
-public class HealthEndpoint : IEndpoint<HealthResponse>
+public class UploadRequest
 {
-    public void Configure(IEndpointConfiguration config)
+    public required IFormFile File { get; init; }
+
+    public static async ValueTask<UploadRequest> BindAsync(HttpContext context)
     {
-        config.Get("/health").AllowAnonymous();
-    }
-
-    public Task HandleAsync(IResponseSender<HealthResponse> sender, CancellationToken cancel)
-    {
-        return sender.StatusCode(HttpStatusCode.OK).SendAsync(new HealthResponse { Status = "ok" }, cancel);
-    }
-}
-```
-
-#### `IEndpoint<TRequest, EmptyResponse>` — no response body
-
-Use for endpoints that return no body (e.g. 204 No Content). Send `EmptyResponse.Instance` and the response body is skipped automatically.
-
-```csharp
-public class DeleteUserRequest
-{
-    [FromRoute]
-    public required int Id { get; init; }
-}
-
-public class DeleteUserEndpoint : IEndpoint<DeleteUserRequest, EmptyResponse>
-{
-    public void Configure(IEndpointConfiguration config)
-    {
-        config.Delete("/users/{id}").Summary("Delete a user");
-    }
-
-    public async Task HandleAsync(
-        IResponseSender<EmptyResponse> sender,
-        DeleteUserRequest request,
-        CancellationToken cancel)
-    {
-        // delete user ...
-        await sender.StatusCode(HttpStatusCode.NoContent).SendAsync(EmptyResponse.Instance, cancel);
+        var form = await context.Request.ReadFormAsync();
+        var file = form.Files["file"] ?? throw new BadHttpRequestException("'file' field is required.");
+        return new UploadRequest { File = file };
     }
 }
 ```
@@ -260,10 +313,6 @@ public class DeleteUserEndpoint : IEndpoint<DeleteUserRequest, EmptyResponse>
 
 DataAnnotations attributes on `TRequest` are validated automatically before `HandleAsync` is called.
 On failure, a `400 Bad Request` response is returned in the standard [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem details format.
-
-> [Handle errors in ASP.NET Core APIs :: PloblemDetails - Microsoft Docs](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/error-handling-api?view=aspnetcore-10.0&tabs=minimal-apis#problem-details)
-
-> [PloblemDetails (Microsoft.AspNetCore.Mvc)](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.problemdetails?view=aspnetcore-10.0)
 
 ```csharp
 public class CreateUserRequest
@@ -278,7 +327,7 @@ public class CreateUserRequest
 }
 ```
 
-A failed request returns a response like the following:
+A failed request returns a response in the following shape:
 
 ```json
 {
@@ -302,8 +351,7 @@ builder.Services.AddAxisEndpoints(options =>
 
 ### Validation with FluentValidation
 
-For logic-heavy validation that DataAnnotations cannot express, FluentValidation can be integrated via a custom `IEndpointFilter`.
-AxisEndpoints does not provide a dedicated FluentValidation package because the filter approach is straightforward and keeps the dependency opt-in.
+For validation logic that DataAnnotations cannot express, FluentValidation can be integrated via a custom `IEndpointFilter`. AxisEndpoints does not provide a dedicated FluentValidation package because the filter approach is straightforward and keeps the dependency opt-in.
 
 ```csharp
 // A reusable filter that resolves IValidator<TRequest> from DI.
@@ -340,7 +388,7 @@ public class FluentValidationFilter<TRequest> : IEndpointFilter
 // Register the validator and apply the filter to the endpoint.
 builder.Services.AddScoped<IValidator<CreateUserRequest>, CreateUserRequestValidator>();
 
-public class CreateUserEndpoint : IEndpoint<CreateUserRequest, CreateUserResponse>
+public class CreateUserEndpoint : IEndpoint<CreateUserRequest, Response<CreateUserResponse>>
 {
     public void Configure(IEndpointConfiguration config)
     {
@@ -359,7 +407,7 @@ public class CreateUserEndpoint : IEndpoint<CreateUserRequest, CreateUserRespons
 Pass one or more role names to restrict access to users in at least one of those roles.
 
 ```csharp
-public class AdminEndpoint : IEndpoint<AdminRequest, AdminResponse>
+public class AdminEndpoint : IEndpoint<AdminRequest, Response<AdminResponse>>
 {
     public void Configure(IEndpointConfiguration config)
     {
@@ -382,7 +430,7 @@ builder.Services.AddAuthorization(options =>
 });
 
 // Endpoint
-public class ManageUsersEndpoint : IEndpoint<ManageUsersRequest, ManageUsersResponse>
+public class ManageUsersEndpoint : IEndpoint<ManageUsersRequest, Response<ManageUsersResponse>>
 {
     public void Configure(IEndpointConfiguration config)
     {
@@ -397,7 +445,7 @@ public class ManageUsersEndpoint : IEndpoint<ManageUsersRequest, ManageUsersResp
 Build a policy inline using `AuthorizationPolicyBuilder` when a named policy is not needed.
 
 ```csharp
-public class ReportsEndpoint : IEndpoint<ReportsRequest, ReportsResponse>
+public class ReportsEndpoint : IEndpoint<ReportsRequest, Response<ReportsResponse>>
 {
     public void Configure(IEndpointConfiguration config)
     {
@@ -413,7 +461,7 @@ public class ReportsEndpoint : IEndpoint<ReportsRequest, ReportsResponse>
 #### Allow anonymous access
 
 ```csharp
-public class HealthEndpoint : IEndpoint<HealthResponse>
+public class HealthEndpoint : IEndpoint<Response<HealthResponse>>
 {
     public void Configure(IEndpointConfiguration config)
     {
@@ -439,57 +487,45 @@ public class UsersGroup : IEndpointGroup
 }
 ```
 
-### Accessing HTTP resources with EndpointContext
+### Accessing HTTP context
 
-For accessing request headers, the authenticated user, or writing a raw response stream (e.g. binary downloads, CSV), inject `EndpointContext` via the constructor. Do not inject it unless needed — typed request/response covers most cases.
+For reading request headers, accessing the authenticated user, or inspecting route values beyond what `TRequest` covers, inject `EndpointContext` via the constructor. Avoid injecting it when typed request/response is sufficient.
 
 ```csharp
-public class DownloadReportEndpoint : IEndpoint<DownloadReportRequest, EmptyResponse>
+public class FindByIdEndpoint : IEndpoint<FindByIdRequest, Response<UserResponse>>
 {
     private readonly EndpointContext _context;
-    private readonly IReportService _reports;
 
-    public DownloadReportEndpoint(EndpointContext context, IReportService reports)
-    {
-        _context = context;
-        _reports = reports;
-    }
+    public FindByIdEndpoint(EndpointContext context) => _context = context;
 
     public void Configure(IEndpointConfiguration config)
     {
-        config.Get("/reports/{id}/download").Summary("Download a report as CSV");
+        config.Get("/users/{id}").Summary("Get a user by ID");
     }
 
-    public async Task HandleAsync(
-        IResponseSender<EmptyResponse> sender,
-        DownloadReportRequest request,
+    public Task<Response<UserResponse>> HandleAsync(
+        FindByIdRequest request,
         CancellationToken cancel)
     {
-        var lang = _context.RequestHeaders["Accept-Language"].FirstOrDefault() ?? "en";
-        _context.RawResponse.ContentType = "text/csv";
-        _context.RawResponse.Headers["Content-Disposition"] = "attachment; filename=report.csv";
-        await _reports.WriteCsvAsync(_context.RawResponse.Body, request.Id, lang, cancel);
+        var language = _context.RequestHeaders["Accept-Language"].FirstOrDefault() ?? "en";
+        // ...
     }
 }
 ```
 
-For file uploads, implement the Minimal API `BindAsync` convention on the request type. The library routes to it automatically.
+`EndpointContext` exposes the following members:
 
-```csharp
-public class UploadRequest
-{
-    public required IFormFile File { get; init; }
+| Member               | Type                | Description                                              |
+| -------------------- | ------------------- | -------------------------------------------------------- |
+| `RequestHeaders`     | `IHeaderDictionary` | Incoming request headers                                 |
+| `User`               | `ClaimsPrincipal`   | The authenticated user                                   |
+| `Query`              | `IQueryCollection`  | Raw query string values                                  |
+| `GetRouteValue(key)` | `string?`           | A single route parameter by name                         |
+| `RawResponse`        | `HttpResponse`      | Escape hatch for writing directly to the response stream |
 
-    public static async ValueTask<UploadRequest> BindAsync(HttpContext context, ParameterInfo _)
-    {
-        var form = await context.Request.ReadFormAsync();
-        var file = form.Files["file"] ?? throw new BadHttpRequestException("'file' field is required.");
-        return new UploadRequest { File = file };
-    }
-}
-```
+`RawResponse` is intended for cases that `Response<TBody>` and extension packages cannot cover. For CSV output, the `AxisEndpoints.Extensions.CsvHelper` package is the preferred approach.
 
-### Grouping multiple endpoints with IEndpointGroup
+### Grouping multiple endpoints
 
 Implement `IEndpointGroup` and reference it with `config.Group<TGroup>()`. All endpoints in the group share the prefix, tags, authorization policy, and filters defined on the group.
 
@@ -504,7 +540,7 @@ public class UsersGroup : IEndpointGroup
     }
 }
 
-public class GetUsersEndpoint : IEndpoint<GetUsersResponse>
+public class GetUsersEndpoint : IEndpoint<Response<GetUsersResponse>>
 {
     public void Configure(IEndpointConfiguration config)
     {
@@ -515,9 +551,9 @@ public class GetUsersEndpoint : IEndpoint<GetUsersResponse>
 }
 ```
 
-### Adding custom filters with IEndpointFilter
+### Adding custom filters
 
-Implement `IEndpointFilter` and register it with `config.AddFilter<TFilter>()`. Filters are resolved from DI per request, so constructor injection is supported. Register a filter on the group to apply it to all endpoints in that group.
+Implement `IEndpointFilter` and register it with `config.AddFilter<TFilter>()`. Filters are resolved from DI per request, so constructor injection is supported. Registering a filter on a group applies it to all endpoints in that group.
 
 ```csharp
 public class LoggingFilter : IEndpointFilter
@@ -526,17 +562,25 @@ public class LoggingFilter : IEndpointFilter
 
     public LoggingFilter(ILogger<LoggingFilter> logger) => _logger = logger;
 
-    public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
+    public async ValueTask<object?> InvokeAsync(
+        EndpointFilterInvocationContext context,
+        EndpointFilterDelegate next)
     {
-        _logger.LogInformation("{Method} {Path}", context.HttpContext.Request.Method, context.HttpContext.Request.Path);
+        _logger.LogInformation("{Method} {Path}",
+            context.HttpContext.Request.Method,
+            context.HttpContext.Request.Path);
+
         var result = await next(context);
-        _logger.LogInformation("Response: {StatusCode}", context.HttpContext.Response.StatusCode);
+
+        _logger.LogInformation("Response: {StatusCode}",
+            context.HttpContext.Response.StatusCode);
+
         return result;
     }
 }
 
-// Per-endpoint filter
-public class MyEndpoint : IEndpoint<MyRequest, MyResponse>
+// Per-endpoint
+public class MyEndpoint : IEndpoint<MyRequest, Response<MyResponse>>
 {
     public void Configure(IEndpointConfiguration config)
     {
@@ -545,7 +589,7 @@ public class MyEndpoint : IEndpoint<MyRequest, MyResponse>
     // ...
 }
 
-// Group-level filter (applied to all endpoints in the group)
+// Group-level (applied to all endpoints in the group)
 public class MyGroup : IEndpointGroup
 {
     public void Configure(IEndpointGroupConfiguration config)
@@ -555,12 +599,155 @@ public class MyGroup : IEndpointGroup
 }
 ```
 
-You can also implement custom filters that apply only to specific endpoints. This mechanism is similar to ASP.NET Core middleware, but whereas middleware applies to all requests, `IEndpointFilter` acts more like a hook that can be applied only to specific endpoints.
+`IEndpointFilter` differs from middleware in that it can be scoped to individual endpoints or groups, rather than applying globally to all requests.
 
-## Acknowledgments
+## CSV extension — AxisEndpoints.Extensions.CsvHelper
 
-- [FastEndpoints](https://fast-endpoints.com/): This implementation was extremely helpful in implementing the REPR pattern.
-- [Architecting ASP.NET Core Applications (Packt Pub)](https://www.packtpub.com/en-us/product/architecting-aspnet-core-applications-9781805129301): This book provided valuable insights into design principles in .NET and various design patterns.
+The `AxisEndpoints.Extensions.CsvHelper` package adds typed CSV import and export to AxisEndpoints endpoints, backed by [CsvHelper](https://joshclose.github.io/CsvHelper/).
+
+### Setup
+
+Install the extension package alongside the core:
+
+```sh
+dotnet add <YourProject> package AxisEndpoints.Extensions.CsvHelper --source <LocalNupkgDirectory>
+```
+
+Register the extension services in `Program.cs`:
+
+```csharp
+using AxisEndpoints.Extensions;
+using AxisEndpoints.Extensions.CsvHelper;
+
+builder.Services.AddAxisEndpoints();
+builder.Services.AddAxisEndpointsCsvHelper(); // registers CsvBindingExceptionFilter
+```
+
+### CSV import — `CsvRequest<TRow>`
+
+Derive your request type from `CsvRequest<TRow>`. After binding, `request.Rows` contains the parsed rows as `IReadOnlyList<TRow>`.
+
+Minimal API requires `BindAsync` to be declared as a non-generic static method on the concrete type, so it cannot be provided by the base class. Declare it in the derived class and delegate to `BindCsvAsync<T>`:
+
+```csharp
+public sealed class UserImportRow
+{
+    [Name("name")]  public string Name  { get; init; } = string.Empty;
+    [Name("email")] public string Email { get; init; } = string.Empty;
+    [Name("role")]  public string Role  { get; init; } = string.Empty;
+}
+
+public sealed class ImportUsersRequest : CsvRequest<UserImportRow>
+{
+    public static ValueTask<ImportUsersRequest> BindAsync(HttpContext context)
+        => BindCsvAsync<ImportUsersRequest>(context);
+}
+
+public sealed class ImportUsersEndpoint : IEndpoint<ImportUsersRequest, Response<EmptyResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Post("/users/import")
+            .AddFilter<CsvBindingExceptionFilter>()
+            .Summary("Import users from CSV");
+    }
+
+    public Task<Response<EmptyResponse>> HandleAsync(
+        ImportUsersRequest request,
+        CancellationToken cancel)
+    {
+        foreach (var row in request.Rows) { /* persist row */ }
+        return Task.FromResult(Response.NoContent);
+    }
+}
+```
+
+Both `text/csv` direct body and `multipart/form-data` file uploads are supported automatically.
+
+### CSV export — `CsvResponse<TRow>`
+
+Return `CsvResponse<TRow>` directly from `HandleAsync`. It implements `IResult`, so the framework streams the rows to the response without buffering the entire dataset in memory.
+
+```csharp
+public sealed class UserExportRow
+{
+    [Name("id")]    public int    Id    { get; init; }
+    [Name("name")]  public string Name  { get; init; } = string.Empty;
+    [Name("email")] public string Email { get; init; } = string.Empty;
+}
+
+public sealed class ExportUsersEndpoint : IEndpoint<CsvResponse<UserExportRow>>
+{
+    private readonly IUserRepository _repository;
+
+    public ExportUsersEndpoint(IUserRepository repository) => _repository = repository;
+
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Get("/users/export").Summary("Export users as CSV");
+    }
+
+    public Task<CsvResponse<UserExportRow>> HandleAsync(CancellationToken cancel)
+    {
+        // IAsyncEnumerable<T> is written row-by-row without loading everything into memory.
+        var rows = _repository.GetAllAsync(cancel);
+        return Task.FromResult(CsvResponse.From(rows, fileName: "users.csv"));
+    }
+}
+```
+
+`CsvResponse.From` also accepts `IEnumerable<T>` for synchronous sequences.
+
+### Per-row validation
+
+DataAnnotations attributes on `TRow` are validated during binding, one row at a time. All errors are collected before the handler is invoked and surfaced as an RFC 9457 `ValidationProblem` response by `CsvBindingExceptionFilter`.
+
+Error keys follow the pattern `"row {n}: {MemberName}"`:
+
+```json
+{
+  "status": 400,
+  "errors": {
+    "row 3: Email": ["The Email field is not a valid e-mail address."],
+    "row 5: Name":  ["The Name field is required."]
+  }
+}
+```
+
+Register `CsvBindingExceptionFilter` on any endpoint that accepts a `CsvRequest<TRow>` parameter:
+
+```csharp
+config.Post("/users/import").AddFilter<CsvBindingExceptionFilter>();
+```
+
+### Custom column mapping with ClassMap
+
+Override `CreateClassMap()` on the derived request type to supply a CsvHelper `ClassMap` instead of relying on attributes:
+
+```csharp
+public sealed class ImportUsersRequest : CsvRequest<UserImportRow>
+{
+    public static ValueTask<ImportUsersRequest> BindAsync(HttpContext context)
+        => BindCsvAsync<ImportUsersRequest>(context);
+
+    protected override ClassMap CreateClassMap() => new UserImportRowMap();
+}
+
+public sealed class UserImportRowMap : ClassMap<UserImportRow>
+{
+    public UserImportRowMap()
+    {
+        Map(r => r.Name).Name("full_name");
+        Map(r => r.Email).Name("email_address");
+    }
+}
+```
+
+The same `CreateClassMap()` override is available on `CsvResponse<TRow>` via the `classMap` parameter of `CsvResponse.From`:
+
+```csharp
+CsvResponse.From(rows, classMap: new UserExportRowMap(), fileName: "users.csv")
+```
 
 ## Author
 
@@ -568,4 +755,4 @@ You can also implement custom filters that apply only to specific endpoints. Thi
 
 ## License
 
-See [LICENSE](./LICENSE) .
+See [LICENSE](./LICENSE).
