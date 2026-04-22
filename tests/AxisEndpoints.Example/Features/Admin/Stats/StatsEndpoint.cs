@@ -13,10 +13,10 @@ public class StatsResponse
 
 /// <summary>
 /// Demonstrates:
-///   - IEndpoint&lt;TRequest, TResponse&gt; with [FromQuery] binding (GET)
+///   - IEndpoint&lt;TRequest, TResult&gt; with [FromQuery] binding (GET)
 ///   - Group-level RequireAuthorization(builder) via AdminEndpointGroup
 /// </summary>
-public class StatsEndpoint : IEndpoint<StatsRequest, StatsResponse>
+public class StatsEndpoint : IEndpoint<StatsRequest, Response<StatsResponse>>
 {
     public void Configure(IEndpointConfiguration config)
     {
@@ -27,24 +27,22 @@ public class StatsEndpoint : IEndpoint<StatsRequest, StatsResponse>
             .Description("Returns aggregated user counts for the specified time window.");
     }
 
-    public Task HandleAsync(
-        IResponseSender<StatsResponse> sender,
-        StatsRequest request,
-        CancellationToken cancel
-    )
+    public Task<Response<StatsResponse>> HandleAsync(StatsRequest request, CancellationToken cancel)
     {
         var to = request.To ?? DateTimeOffset.UtcNow;
         var from = request.From ?? to.AddDays(-30);
 
-        return sender.SendAsync(
-            new StatsResponse
+        return Task.FromResult(
+            new Response<StatsResponse>
             {
-                TotalUsers = 42,
-                NewUsersInPeriod = 7,
-                From = from,
-                To = to,
-            },
-            cancel
+                Body = new StatsResponse
+                {
+                    TotalUsers = 42,
+                    NewUsersInPeriod = 7,
+                    From = from,
+                    To = to,
+                },
+            }
         );
     }
 }

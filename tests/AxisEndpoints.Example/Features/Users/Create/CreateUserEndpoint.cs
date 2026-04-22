@@ -6,12 +6,12 @@ namespace AxisEndpoints.Example.Features.Users.Create;
 
 /// <summary>
 /// Demonstrates:
-///   - IEndpoint&lt;TRequest, TResponse&gt; with POST body binding
+///   - IEndpoint&lt;TRequest, TResult&gt; with POST body binding
 ///   - DataAnnotations validation (applied automatically via CreateUserRequest attributes)
 ///   - Per-endpoint AddFilter&lt;AuditFilter&gt;
 ///   - 201 Created with Location header
 /// </summary>
-public class CreateUserEndpoint : IEndpoint<CreateUserRequest, UserResponse>
+public class CreateUserEndpoint : IEndpoint<CreateUserRequest, Response<UserResponse>>
 {
     public void Configure(IEndpointConfiguration config)
     {
@@ -23,8 +23,7 @@ public class CreateUserEndpoint : IEndpoint<CreateUserRequest, UserResponse>
             .AddFilter<AuditFilter>();
     }
 
-    public Task HandleAsync(
-        IResponseSender<UserResponse> sender,
+    public Task<Response<UserResponse>> HandleAsync(
         CreateUserRequest request,
         CancellationToken cancel
     )
@@ -38,9 +37,13 @@ public class CreateUserEndpoint : IEndpoint<CreateUserRequest, UserResponse>
             Role = request.Role,
         };
 
-        return sender
-            .StatusCode(HttpStatusCode.Created)
-            .Header("Location", $"/api/users/{created.Id}")
-            .SendAsync(created, cancel);
+        return Task.FromResult(
+            new Response<UserResponse>
+            {
+                StatusCode = HttpStatusCode.Created,
+                Headers = [("Location", $"/api/users/{created.Id}")],
+                Body = created,
+            }
+        );
     }
 }

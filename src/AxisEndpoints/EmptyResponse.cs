@@ -2,8 +2,9 @@ namespace AxisEndpoints;
 
 /// <summary>
 /// Marker type for endpoints that return no response body.
-/// Use as the TResponse type parameter: <c>IEndpoint&lt;TRequest, EmptyResponse&gt;</c>.
-/// <see cref="IResponseSender{TResponse}"/> skips JSON serialization when this type is sent.
+/// Use with <see cref="Response{TBody}"/>: <c>Response&lt;EmptyResponse&gt;</c>.
+/// The framework skips JSON serialization when the body is this type.
+/// Prefer the <see cref="Response.Empty"/> or <see cref="Response.NoContent"/> shorthands.
 /// </summary>
 public sealed class EmptyResponse
 {

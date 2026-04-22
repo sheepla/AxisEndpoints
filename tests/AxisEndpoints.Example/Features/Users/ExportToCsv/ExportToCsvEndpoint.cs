@@ -4,13 +4,6 @@ using CsvHelper.Configuration.Attributes;
 
 namespace AxisEndpoints.Example.Features.Users.ExportToCsv;
 
-// ---------------------------------------------------------------------------
-// Row model
-// ---------------------------------------------------------------------------
-
-/// <summary>
-/// Represents a single user row written to an exported CSV file.
-/// </summary>
 public sealed class UserExportRow
 {
     [Name("id")]
@@ -25,10 +18,6 @@ public sealed class UserExportRow
     [Name("role")]
     public string Role { get; init; } = string.Empty;
 }
-
-// ---------------------------------------------------------------------------
-// Endpoint
-// ---------------------------------------------------------------------------
 
 /// <summary>
 /// Demonstrates CSV export via <see cref="CsvResponse{TRow}"/>.
@@ -46,14 +35,9 @@ public sealed class ExportToCsvEndpoint : IEndpoint<CsvResponse<UserExportRow>>
             .Description("Streams all users as a downloadable CSV file.");
     }
 
-    public Task HandleAsync(
-        IResponseSender<CsvResponse<UserExportRow>> sender,
-        CancellationToken cancel
-    )
+    public Task<CsvResponse<UserExportRow>> HandleAsync(CancellationToken cancel)
     {
-        var rows = FetchUsersAsync(cancel);
-
-        return sender.SendAsync(CsvResponse.From(rows, fileName: "users.csv"), cancel);
+        return Task.FromResult(CsvResponse.From(FetchUsersAsync(cancel), fileName: "users.csv"));
     }
 
     private static async IAsyncEnumerable<UserExportRow> FetchUsersAsync(

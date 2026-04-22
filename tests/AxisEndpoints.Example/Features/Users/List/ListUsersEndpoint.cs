@@ -12,11 +12,11 @@ public class ListUsersResponse
 
 /// <summary>
 /// Demonstrates:
-///   - IEndpoint&lt;TRequest, TResponse&gt; with multiple [FromQuery] parameters (GET)
+///   - IEndpoint&lt;TRequest, TResult&gt; with multiple [FromQuery] parameters (GET)
 ///   - DataAnnotations on query-bound values (Page, PageSize range validation)
 ///   - Paginated response shape
 /// </summary>
-public class ListUsersEndpoint : IEndpoint<ListUsersRequest, ListUsersResponse>
+public class ListUsersEndpoint : IEndpoint<ListUsersRequest, Response<ListUsersResponse>>
 {
     public void Configure(IEndpointConfiguration config)
     {
@@ -27,8 +27,7 @@ public class ListUsersEndpoint : IEndpoint<ListUsersRequest, ListUsersResponse>
             .Description("Returns a paginated list of users. Supports optional role filtering.");
     }
 
-    public Task HandleAsync(
-        IResponseSender<ListUsersResponse> sender,
+    public Task<Response<ListUsersResponse>> HandleAsync(
         ListUsersRequest request,
         CancellationToken cancel
     )
@@ -75,15 +74,17 @@ public class ListUsersEndpoint : IEndpoint<ListUsersRequest, ListUsersResponse>
             .Take(request.PageSize)
             .ToList();
 
-        return sender.SendAsync(
-            new ListUsersResponse
+        return Task.FromResult(
+            new Response<ListUsersResponse>
             {
-                Items = items,
-                Page = request.Page,
-                PageSize = request.PageSize,
-                TotalCount = filtered.Count,
-            },
-            cancel
+                Body = new ListUsersResponse
+                {
+                    Items = items,
+                    Page = request.Page,
+                    PageSize = request.PageSize,
+                    TotalCount = filtered.Count,
+                },
+            }
         );
     }
 }

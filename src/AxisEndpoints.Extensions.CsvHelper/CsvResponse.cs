@@ -12,14 +12,14 @@ namespace AxisEndpoints.Extensions.CsvHelper;
 /// as a CSV response, writing directly to the response stream without buffering the entire
 /// dataset in memory.
 ///
-/// Because this type implements <see cref="IResult"/>, <c>ResponseSender</c> in AxisEndpoints
+/// Because this type implements <see cref="IResult"/>, the AxisEndpoints framework
 /// delegates execution directly to <see cref="ExecuteAsync"/> rather than wrapping it in
 /// <c>Results.Json</c>.
 ///
-/// Create instances via the static factory methods on <see cref="CsvResponse"/>:
+/// Return an instance directly from <c>HandleAsync</c> via the static factory on <see cref="CsvResponse"/>:
 /// <code>
-/// await sender.SendAsync(CsvResponse.From(rows), cancel);
-/// await sender.SendAsync(CsvResponse.From(rows, classMap: new UserRowMap()), cancel);
+/// return Task.FromResult(CsvResponse.From(rows));
+/// return Task.FromResult(CsvResponse.From(rows, classMap: new UserRowMap()));
 /// </code>
 /// </summary>
 /// <typeparam name="TRow">The strongly-typed row model.</typeparam>
