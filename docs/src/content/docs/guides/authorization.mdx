@@ -1,0 +1,91 @@
+---
+title: "Authorization"
+description: "Configure role-based, policy-based, and anonymous access for AxisEndpoints."
+---
+
+## Require roles
+
+Pass one or more role names to restrict access to users in at least one of those roles.
+
+```csharp
+public class AdminEndpoint : IEndpoint<AdminRequest, Response<AdminResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Get("/admin/stats").RequireAuthorization("Admin", "SuperAdmin");
+    }
+    // ...
+}
+```
+
+## Require a named policy
+
+Reference a policy defined in `AddAuthorization` by name.
+
+```csharp
+// Program.cs
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("CanManageUsers", policy =>
+        policy.RequireRole("Admin").RequireClaim("department", "engineering"));
+});
+
+// Endpoint
+public class ManageUsersEndpoint : IEndpoint<ManageUsersRequest, Response<ManageUsersResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Post("/users/manage").RequireAuthorization("CanManageUsers");
+    }
+    // ...
+}
+```
+
+## Require a dynamically constructed policy
+
+Build a policy inline using `AuthorizationPolicyBuilder` when a named policy is not needed.
+
+```csharp
+public class ReportsEndpoint : IEndpoint<ReportsRequest, Response<ReportsResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Get("/reports")
+            .RequireAuthorization(policy => policy
+                .RequireAuthenticatedUser()
+                .RequireClaim("subscription", "pro", "enterprise"));
+    }
+    // ...
+}
+```
+
+## Allow anonymous access
+
+```csharp
+public class HealthEndpoint : IEndpoint<Response<HealthResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Get("/health").AllowAnonymous();
+    }
+    // ...
+}
+```
+
+## Group-level authorization
+
+Authorization set on a group applies to all endpoints in that group. Per-endpoint settings take precedence.
+
+```csharp
+public class UsersGroup : IEndpointGroup
+{
+    public void Configure(IEndpointGroupConfiguration config)
+    {
+        config.Prefix("/api/users")
+            .Tags("Users")
+            .RequireAuthorization("CanManageUsers");
+    }
+}
+```
+
+For more on endpoint groups, see the [Endpoint Groups](/guides/endpoint-groups/) guide.

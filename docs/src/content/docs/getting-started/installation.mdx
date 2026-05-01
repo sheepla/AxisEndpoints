@@ -1,0 +1,32 @@
+---
+title: "Installation"
+description: "Install AxisEndpoints and optional extension packages in your ASP.NET Core project."
+---
+
+## Install from nuget.org
+
+Add the core package to your project:
+
+```sh
+dotnet add package AxisEndpoints
+```
+
+For the CSV extension:
+
+```sh
+dotnet add package AxisEndpoints.Extensions.CsvHelper
+```
+
+## Install from local nupkg
+
+If you are building from source or testing a pre-release version, you can install from a local `.nupkg` file:
+
+```sh
+# Build the NuGet package
+dotnet pack src/AxisEndpoints/AxisEndpoints.csproj -o <LocalNupkgDirectory>
+
+# Add it to your project
+dotnet add <YourProject> package AxisEndpoints --source <LocalNupkgDirectory>
+```
+
+Once installed, proceed to the [Quick Start](/getting-started/quick-start/) guide to set up your first endpoint.

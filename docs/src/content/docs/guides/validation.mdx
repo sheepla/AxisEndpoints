@@ -1,0 +1,99 @@
+---
+title: "Validation"
+description: "Validate request data using DataAnnotations or FluentValidation in AxisEndpoints."
+---
+
+## Validation with DataAnnotations
+
+DataAnnotations attributes on `TRequest` are validated automatically before `HandleAsync` is called.
+On failure, a `400 Bad Request` response is returned in the standard [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem details format.
+
+```csharp
+public class CreateUserRequest
+{
+    [Required]
+    [MaxLength(100)]
+    public required string Name { get; init; }
+
+    [Required]
+    [EmailAddress]
+    public required string Email { get; init; }
+}
+```
+
+A failed request returns a response in the following shape:
+
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "One or more validation errors occurred.",
+  "status": 400,
+  "errors": {
+    "Email": ["The Email field is not a valid e-mail address."]
+  }
+}
+```
+
+### Disabling automatic validation
+
+To opt out of automatic validation globally, pass options to `AddAxisEndpoints`:
+
+```csharp
+builder.Services.AddAxisEndpoints(options =>
+{
+    options.DisableDataAnnotationsValidation = true;
+});
+```
+
+## Validation with FluentValidation
+
+For validation logic that DataAnnotations cannot express, FluentValidation can be integrated via a custom `IEndpointFilter`. AxisEndpoints does not provide a dedicated FluentValidation package because the filter approach is straightforward and keeps the dependency opt-in.
+
+```csharp
+// A reusable filter that resolves IValidator<TRequest> from DI.
+public class FluentValidationFilter<TRequest> : IEndpointFilter
+{
+    private readonly IValidator<TRequest> _validator;
+
+    public FluentValidationFilter(IValidator<TRequest> validator) => _validator = validator;
+
+    public async ValueTask<object?> InvokeAsync(
+        EndpointFilterInvocationContext context,
+        EndpointFilterDelegate next)
+    {
+        var request = context.Arguments.OfType<TRequest>().FirstOrDefault();
+
+        if (request is not null)
+        {
+            var result = await _validator.ValidateAsync(request);
+
+            if (!result.IsValid)
+            {
+                var errors = result.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+
+                return TypedResults.ValidationProblem(errors);
+            }
+        }
+
+        return await next(context);
+    }
+}
+
+// Register the validator and apply the filter to the endpoint.
+builder.Services.AddScoped<IValidator<CreateUserRequest>, CreateUserRequestValidator>();
+
+public class CreateUserEndpoint : IEndpoint<CreateUserRequest, Response<CreateUserResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Post("/users")
+            .Tags("Users")
+            .AddFilter<FluentValidationFilter<CreateUserRequest>>();
+    }
+    // ...
+}
+```
+
+For more on custom filters, see the [Filters](/guides/filters/) guide. For CSV row-level validation, see [Row Validation](/extensions/csv-helper/row-validation/).

@@ -1,0 +1,30 @@
+---
+title: "Endpoint Groups"
+description: "Group multiple endpoints to share prefixes, tags, authorization, and filters."
+---
+
+Implement `IEndpointGroup` and reference it with `config.Group<TGroup>()`. All endpoints in the group share the prefix, tags, authorization policy, and filters defined on the group.
+
+```csharp
+public class UsersGroup : IEndpointGroup
+{
+    public void Configure(IEndpointGroupConfiguration config)
+    {
+        config.Prefix("/api/users")
+            .Tags("Users")
+            .RequireAuthorization();
+    }
+}
+
+public class GetUsersEndpoint : IEndpoint<Response<GetUsersResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        // Resolves to GET /api/users
+        config.Get("/").Group<UsersGroup>().Summary("Get all users");
+    }
+    // ...
+}
+```
+
+For group-level authorization, see the [Authorization](/guides/authorization/) guide. For applying filters to an entire group, see the [Filters](/guides/filters/) guide.

@@ -1,0 +1,37 @@
+---
+title: "Class Map"
+description: "Customize CSV column-to-property mapping using CsvHelper ClassMap."
+---
+
+Override `CreateClassMap()` on the derived request type to supply a CsvHelper `ClassMap` instead of relying on attributes:
+
+## Import
+
+```csharp
+public sealed class ImportUsersRequest : CsvRequest<UserImportRow>
+{
+    public static ValueTask<ImportUsersRequest> BindAsync(HttpContext context)
+        => BindCsvAsync<ImportUsersRequest>(context);
+
+    protected override ClassMap CreateClassMap() => new UserImportRowMap();
+}
+
+public sealed class UserImportRowMap : ClassMap<UserImportRow>
+{
+    public UserImportRowMap()
+    {
+        Map(r => r.Name).Name("full_name");
+        Map(r => r.Email).Name("email_address");
+    }
+}
+```
+
+## Export
+
+The same `CreateClassMap()` override is available on `CsvResponse<TRow>` via the `classMap` parameter of `CsvResponse.From`:
+
+```csharp
+CsvResponse.From(rows, classMap: new UserExportRowMap(), fileName: "users.csv")
+```
+
+For the full CSV import example, see [CSV Import](/extensions/csv-helper/csv-import/). For export, see [CSV Export](/extensions/csv-helper/csv-export/).
