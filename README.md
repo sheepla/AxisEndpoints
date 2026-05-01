@@ -1,5 +1,10 @@
 # AxisEndpoints
 
+[![NuGet](https://img.shields.io/nuget/v/AxisEndpoints?label=AxisEndpoints)](https://www.nuget.org/packages/AxisEndpoints)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/AxisEndpoints)](https://www.nuget.org/packages/AxisEndpoints)
+[![NuGet](https://img.shields.io/nuget/v/AxisEndpoints.Extensions.CsvHelper?label=AxisEndpoints.Extensions.CsvHelper)](https://www.nuget.org/packages/AxisEndpoints.Extensions.CsvHelper)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/AxisEndpoints.Extensions.CsvHelper)](https://www.nuget.org/packages/AxisEndpoints.Extensions.CsvHelper)
+
 *This project is currently under development. Specifications are subject to change without notice.*
 
 ## Table of Contents
