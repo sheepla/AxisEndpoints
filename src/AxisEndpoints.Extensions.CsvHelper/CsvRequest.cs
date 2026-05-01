@@ -26,14 +26,22 @@ namespace AxisEndpoints.Extensions.CsvHelper;
 /// derived class to customise CsvHelper behaviour without touching the binding logic.
 ///
 /// DataAnnotations placed on <typeparamref name="TRow"/> are validated per-row during binding.
-/// Errors are collected across all rows and surfaced as a <see cref="CsvBindingException"/>
-/// before the endpoint handler is invoked.
+/// Errors are collected across all rows and stored in <see cref="BindingErrors"/> so that
+/// <see cref="CsvBindingExceptionFilter"/> can inspect them inside the endpoint filter pipeline.
 /// </summary>
 /// <typeparam name="TRow">The strongly-typed row model.</typeparam>
-public abstract class CsvRequest<TRow>
+public abstract class CsvRequest<TRow> : ICsvBindingErrors
 {
     /// <summary>The rows parsed from the CSV body. Empty when the body contained no data rows.</summary>
     public IReadOnlyList<TRow> Rows { get; private set; } = [];
+
+    /// <summary>
+    /// Validation errors collected during binding, keyed by "row {n}: {memberName}".
+    /// Empty when all rows pass validation. Inspected by <see cref="CsvBindingExceptionFilter"/>
+    /// to return a <c>ValidationProblem</c> response before the handler is invoked.
+    /// </summary>
+    public IReadOnlyDictionary<string, string[]> BindingErrors { get; private set; } =
+        new Dictionary<string, string[]>();
 
     // -------------------------------------------------------------------------
     // Binding helper — call this from the derived class's BindAsync
@@ -73,7 +81,7 @@ public abstract class CsvRequest<TRow>
 
         if (errors.Count > 0)
         {
-            throw new CsvBindingException(errors);
+            instance.BindingErrors = errors;
         }
 
         instance.Rows = rows;
@@ -113,57 +121,61 @@ public abstract class CsvRequest<TRow>
     {
         var contentType = context.Request.ContentType ?? string.Empty;
 
-        if (contentType.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase))
+        if (contentType.Contains("multipart/form-data", StringComparison.OrdinalIgnoreCase))
         {
             var form = await context.Request.ReadFormAsync();
             var file =
                 form.Files.FirstOrDefault()
-                ?? throw new InvalidOperationException(
-                    "No file was found in the multipart/form-data request."
+                ?? throw new BadHttpRequestException(
+                    "Expected a CSV file in the multipart/form-data request."
                 );
             return file.OpenReadStream();
         }
 
-        // Fall through for text/csv and application/octet-stream.
-        return context.Request.Body;
+        // Assume the body itself is the CSV content (text/csv or similar).
+        // Return the body stream wrapped in a MemoryStream so callers can dispose it
+        // without closing the original request body.
+        var ms = new MemoryStream();
+        await context.Request.Body.CopyToAsync(ms);
+        ms.Position = 0;
+        return ms;
     }
 
     /// <summary>
-    /// Runs DataAnnotations validation against a single parsed row.
-    /// Errors are keyed as "row {rowNumber}: {memberName}" to surface the source line.
+    /// Validates a single row using DataAnnotations and appends any errors to the
+    /// <paramref name="errors"/> dictionary keyed by <c>"row {rowNumber}: {memberName}"</c>.
     /// </summary>
-    private static void ValidateRow(TRow row, int rowNumber, Dictionary<string, string[]> errors)
+    private static void ValidateRow(
+        TRow row,
+        int rowNumber,
+        Dictionary<string, string[]> errors
+    )
     {
         if (row is null)
         {
             return;
         }
 
-        var validationContext = new ValidationContext(row);
-        var validationResults = new List<ValidationResult>();
+        var context = new ValidationContext(row);
+        var results = new List<ValidationResult>();
 
-        if (
-            Validator.TryValidateObject(
-                row,
-                validationContext,
-                validationResults,
-                validateAllProperties: true
-            )
-        )
+        if (Validator.TryValidateObject(row, context, results, validateAllProperties: true))
         {
             return;
         }
 
-        foreach (var result in validationResults)
+        foreach (var result in results)
         {
-            foreach (var member in result.MemberNames.DefaultIfEmpty(string.Empty))
+            var memberName = result.MemberNames.FirstOrDefault() ?? "(unknown)";
+            var key = $"row {rowNumber}: {memberName}";
+            var message = result.ErrorMessage ?? "Validation failed.";
+            if (errors.TryGetValue(key, out var existing))
             {
-                var key = $"row {rowNumber}: {member}";
-                var message = result.ErrorMessage ?? "Validation failed.";
-
-                errors[key] = errors.TryGetValue(key, out var existing)
-                    ? [.. existing, message]
-                    : [message];
+                errors[key] = [..existing, message];
+            }
+            else
+            {
+                errors[key] = [message];
             }
         }
     }

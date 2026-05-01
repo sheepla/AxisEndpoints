@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text;
-using AxisEndpoints.Extensions.CsvHelper;
 using FluentAssertions;
 
 namespace AxisEndpoints.Example.Tests;
@@ -49,22 +48,14 @@ public class CsvEndpointTests : IClassFixture<ExampleWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
-    /// <summary>
-    /// CsvBindingException is thrown during BindAsync (parameter binding phase),
-    /// which executes before the endpoint filter pipeline. As a result,
-    /// CsvBindingExceptionFilter cannot catch it and the exception propagates
-    /// as an unhandled server error.
-    /// </summary>
     [Fact]
-    public async Task ImportCsv_InvalidRow_ThrowsCsvBindingException()
+    public async Task ImportCsv_InvalidRow_Returns400ValidationProblem()
     {
         var csvContent = "name,email,role\n,invalid-email,";
         var content = new StringContent(csvContent, Encoding.UTF8, "text/csv");
 
-        var act = () => _client.PostAsync("/api/users/users/import", content);
+        var response = await _client.PostAsync("/api/users/users/import", content);
 
-        await act.Should()
-            .ThrowAsync<Exception>()
-            .Where(ex => ex.ToString().Contains(nameof(CsvBindingException)));
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }
