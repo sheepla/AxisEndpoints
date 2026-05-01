@@ -63,7 +63,7 @@ public class GetUsersEndpoint : IEndpoint<Response<GetUsersResponse>>
 ```
 
 :::note
-`.RequireAuthorization()` を引数なしで呼び出すと空のロール配列が渡されるため、認可は実質的に適用されません。必ずロール名（例: `"Admin"`）またはポリシー名（例: `"CanManageUsers"`）を指定してください。
+`.RequireAuthorization()` を引数なしで呼び出すと空のロール配列が渡されるため、認可は実質的に適用されません。必ずポリシー名（例: `RequireAuthorization("CanManageUsers")`）またはロール名を複数指定（例: `RequireAuthorization("Admin", "SuperAdmin")`）してください。単一の文字列を渡すと `string policy` オーバーロードが優先され、ロールではなくポリシー名として解釈されます。
 :::
 
 ## ロールベースのグループ認可
