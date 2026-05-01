@@ -3,7 +3,42 @@ title: "Endpoint Groups"
 description: "Group multiple endpoints to share prefixes, tags, authorization, and filters."
 ---
 
-Implement `IEndpointGroup` and reference it with `config.Group<TGroup>()`. All endpoints in the group share the prefix, tags, authorization policy, and filters defined on the group.
+## Endpoint Group とは
+
+Endpoint Group は、複数のエンドポイントが共通のルートプレフィックス、タグ、認可ポリシー、フィルタを共有するための仕組みです。ASP.NET Core Minimal API の `MapGroup()` に対応する概念であり、AxisEndpoints ではこれを `IEndpointGroup` インタフェースとして宣言的に定義します。
+
+グループを活用することで、以下のメリットが得られます:
+
+- **DRY原則**: 共通のルートプレフィックスやタグを一箇所にまとめ、各エンドポイントで繰り返し記述する必要がなくなります
+- **一貫した認可ポリシー**: グループに設定した認可ポリシーがすべてのエンドポイントに自動適用されるため、設定漏れを防ぎます
+- **OpenAPI タグの統一**: グループで設定したタグにより、OpenAPI ドキュメント上でエンドポイントが論理的にまとめられます
+
+## `IEndpointGroup` インタフェース
+
+```csharp
+public interface IEndpointGroup
+{
+    void Configure(IEndpointGroupConfiguration config);
+}
+```
+
+`Configure()` メソッドで `IEndpointGroupConfiguration` を使って共通設定を宣言します。
+
+## `IEndpointGroupConfiguration` で設定できる項目
+
+| メソッド | 説明 |
+| --- | --- |
+| `Prefix(string prefix)` | グループ内の全エンドポイントに共通のルートプレフィックスを設定 |
+| `Tags(params string[] tags)` | OpenAPI タグを設定 |
+| `AllowAnonymous()` | 認証なしのアクセスを許可 |
+| `RequireAuthorization(params string[] roles)` | 指定したロールのいずれかを持つユーザーに制限 |
+| `RequireAuthorization(string policy)` | 名前付き認可ポリシーを適用 |
+| `RequireAuthorization(Action<AuthorizationPolicyBuilder> build)` | 動的に構築した認可ポリシーを適用 |
+| `AddFilter<TFilter>()` | グループ内の全エンドポイントにフィルタを適用 |
+
+## 基本的な使い方
+
+`IEndpointGroup` を実装し、エンドポイントの `Configure` メソッドで `config.Group<TGroup>()` を呼び出して参照します。グループで定義したプレフィックス、タグ、認可ポリシー、フィルタがすべてのエンドポイントに共有されます。
 
 ```csharp
 public class UsersGroup : IEndpointGroup
@@ -12,7 +47,7 @@ public class UsersGroup : IEndpointGroup
     {
         config.Prefix("/api/users")
             .Tags("Users")
-            .RequireAuthorization();
+            .RequireAuthorization("CanManageUsers");
     }
 }
 
@@ -24,6 +59,39 @@ public class GetUsersEndpoint : IEndpoint<Response<GetUsersResponse>>
         config.Get("/").Group<UsersGroup>().Summary("Get all users");
     }
     // ...
+}
+```
+
+:::note
+`.RequireAuthorization()` を引数なしで呼び出すと空のロール配列が渡されるため、認可は実質的に適用されません。必ずロール名（例: `"Admin"`）またはポリシー名（例: `"CanManageUsers"`）を指定してください。
+:::
+
+## ロールベースのグループ認可
+
+```csharp
+public class AdminGroup : IEndpointGroup
+{
+    public void Configure(IEndpointGroupConfiguration config)
+    {
+        config.Prefix("/api/admin")
+            .Tags("Admin")
+            .RequireAuthorization("Admin", "SuperAdmin");
+    }
+}
+```
+
+## グループにフィルタを適用する
+
+グループに登録したフィルタは、そのグループに属するすべてのエンドポイントに適用されます。
+
+```csharp
+public class AuditedGroup : IEndpointGroup
+{
+    public void Configure(IEndpointGroupConfiguration config)
+    {
+        config.Prefix("/api/audited")
+            .AddFilter<AuditLogFilter>();
+    }
 }
 ```
 

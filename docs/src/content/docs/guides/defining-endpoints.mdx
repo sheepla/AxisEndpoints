@@ -3,6 +3,61 @@ title: "Defining Endpoints"
 description: "Learn how to define endpoints using IEndpoint with different request and response types."
 ---
 
+## `IEndpoint` インタフェース
+
+AxisEndpoints の中核は `IEndpoint` インタフェースです。すべてのエンドポイントはこのインタフェースを実装することで、ルーティング・メタデータ・リクエスト処理を1つのクラスに集約します。
+
+### 2つのバリアント
+
+リクエストパラメータの有無に応じて、2つのバリアントが用意されています:
+
+```csharp
+// リクエストパラメータを受け取るエンドポイント
+public interface IEndpoint<TRequest, TResult>
+{
+    void Configure(IEndpointConfiguration config);
+    Task<TResult> HandleAsync(TRequest request, CancellationToken cancel);
+}
+
+// リクエストパラメータなしのエンドポイント
+public interface IEndpoint<TResult>
+{
+    void Configure(IEndpointConfiguration config);
+    Task<TResult> HandleAsync(CancellationToken cancel);
+}
+```
+
+### 2つの責務
+
+- **`Configure()`**: ルーティング（HTTPメソッドとパス）、OpenAPI メタデータ（タグ、サマリー）、認可ポリシー、フィルタを宣言します
+- **`HandleAsync()`**: リクエストを処理してレスポンスを返します
+
+### `TResult` の型
+
+`TResult` は以下のいずれかです:
+
+- **`Response<TBody>`** — JSON 応答。200 のスキーマが OpenAPI に自動登録されます
+- **`IResult`** — カスタム応答。複数のレスポンス形状を返す場合や、CSV エクスポートなど JSON 以外の応答に使用します
+
+### コンストラクタインジェクション
+
+エンドポイントクラスは DI コンテナから解決されるため、コンストラクタインジェクションで依存を受け取れます。`AddAxisEndpoints()` のアセンブリスキャンにより、`IEndpoint` を実装するクラスは自動的に DI コンテナに登録されます。
+
+### サポートされる HTTP メソッド
+
+`IEndpointConfiguration` では以下の6つの HTTP メソッドがサポートされています:
+
+| メソッド | 設定メソッド |
+| --- | --- |
+| GET | `config.Get(route)` |
+| POST | `config.Post(route)` |
+| PUT | `config.Put(route)` |
+| PATCH | `config.Patch(route)` |
+| DELETE | `config.Delete(route)` |
+| HEAD | `config.Head(route)` |
+
+---
+
 ## JSON response — `Response<TBody>`
 
 Use `IEndpoint<TRequest, Response<TBody>>` for POST, PUT, and PATCH endpoints where `TRequest` is bound from the JSON request body.

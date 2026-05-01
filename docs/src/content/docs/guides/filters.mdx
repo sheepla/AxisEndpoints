@@ -3,6 +3,20 @@ title: "Filters"
 description: "Add custom IEndpointFilter implementations to individual endpoints or groups."
 ---
 
+## Filter とは
+
+`IEndpointFilter` は ASP.NET Core Minimal API が提供するインタフェースで、リクエストがハンドラに到達する前後に処理を挟むパイプライン機構です。
+
+### ミドルウェアとの違い
+
+ミドルウェアはすべてのリクエストに対してグローバルに適用されますが、フィルタは特定のエンドポイントやグループにスコープを限定できます。これにより、認証ログ、バリデーション、レート制限などの横断的関心事を、必要なエンドポイントだけに適用できます。
+
+### AxisEndpoints でのフィルタ登録
+
+AxisEndpoints では `config.AddFilter<TFilter>()` でフィルタを登録します。フィルタは DI コンテナから解決されるため、コンストラクタインジェクションが使えます。また、フィルタクラスは `AddAxisEndpoints()` のアセンブリスキャンで自動的に DI コンテナに登録されるため、手動での登録は不要です。
+
+---
+
 Implement `IEndpointFilter` and register it with `config.AddFilter<TFilter>()`. Filters are resolved from DI per request, so constructor injection is supported. Registering a filter on a group applies it to all endpoints in that group.
 
 ```csharp

@@ -35,4 +35,30 @@ public sealed class ExportUsersEndpoint : IEndpoint<CsvResponse<UserExportRow>>
 
 `CsvResponse.From` also accepts `IEnumerable<T>` for synchronous sequences.
 
+## `CsvResponse.From` パラメータ
+
+`CsvResponse.From` は以下のパラメータを受け取ります:
+
+| パラメータ | 型 | デフォルト値 | 説明 |
+| --- | --- | --- | --- |
+| `rows` | `IAsyncEnumerable<TRow>` or `IEnumerable<TRow>` | *(必須)* | CSV として出力する行のシーケンス |
+| `classMap` | `ClassMap?` | `null` | CsvHelper の `ClassMap` によるカラムマッピング・フォーマット設定。`null` の場合は CsvHelper の規約ベースのマッピングおよび `TRow` の属性が使用されます |
+| `fileName` | `string` | `"export.csv"` | `Content-Disposition` ヘッダーに設定されるファイル名 |
+| `statusCode` | `HttpStatusCode` | `HttpStatusCode.OK` | HTTP ステータスコード |
+| `configuration` | `CsvConfiguration?` | `null` | CsvHelper の書き込み設定。`null` の場合は `CultureInfo.InvariantCulture` を使用した既定の設定が適用されます |
+
+```csharp
+// すべてのパラメータを指定する例
+CsvResponse.From(
+    rows,
+    classMap: new UserRowMap(),
+    fileName: "users-export.csv",
+    statusCode: HttpStatusCode.OK,
+    configuration: new CsvConfiguration(CultureInfo.InvariantCulture)
+    {
+        Delimiter = "\t"
+    }
+);
+```
+
 For custom column mapping on export, see [Class Map](/extensions/csv-helper/class-map/).
