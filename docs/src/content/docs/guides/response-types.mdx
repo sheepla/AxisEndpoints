@@ -1,0 +1,36 @@
+---
+title: "Response Types"
+description: "Quick reference for the available response types in AxisEndpoints."
+---
+
+## Response type quick reference
+
+`HandleAsync` returns `Task<TResult>`. The value of `TResult` determines how the response is written:
+
+| Scenario                         | Return type                  | Example                                                                                  |
+| -------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------- |
+| JSON response                    | `Response<TBody>`            | `return new Response<UserResponse> { Body = user }`                                      |
+| JSON with status code or headers | `Response<TBody>`            | `return new Response<UserResponse> { StatusCode = HttpStatusCode.Created, Body = user }` |
+| No response body                 | `Response<EmptyResponse>`    | `return Response.NoContent`                                                              |
+| Multiple response shapes         | `IResult`                    | `return Results.Problem(...)` or `Results.Json(...)`                                     |
+| CSV export or other stream       | `IResult` implementation     | `return Task.FromResult(CsvResponse.From(rows))`                                         |
+| Fully custom response            | Any `IResult` implementation | `return Task.FromResult(new MyCustomResult(...))`                                        |
+
+## Response\<TBody\> properties
+
+`Response<TBody>` has three properties. Only `Body` is required:
+
+```csharp
+new Response<UserResponse>
+{
+    StatusCode = HttpStatusCode.Created,          // defaults to 200 OK
+    Headers    = [("Location", $"/users/{id}")],  // defaults to empty
+    Body       = new UserResponse { Id = id },    // required
+}
+```
+
+## No-body shorthands
+
+The static shorthands `Response.Empty` (200 OK, no body) and `Response.NoContent` (204 No Content) cover the most common no-body cases.
+
+For more details on declaring error response shapes in OpenAPI, see the [Error Responses](/guides/error-responses/) guide.

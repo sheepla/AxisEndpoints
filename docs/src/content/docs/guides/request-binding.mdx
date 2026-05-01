@@ -1,0 +1,73 @@
+---
+title: "Request Binding"
+description: "Learn how to bind route parameters, query strings, and custom request types in AxisEndpoints."
+---
+
+## Route and query parameters
+
+For GET and DELETE, `TRequest` is bound from route values and the query string rather than the request body. Annotate properties with `[FromRoute]` or `[FromQuery]` to clarify the binding source.
+
+```csharp
+public class GetUserRequest
+{
+    [FromRoute]
+    public required int Id { get; init; }
+}
+
+public class GetUserResponse
+{
+    public required int Id { get; init; }
+    public required string Name { get; init; }
+}
+
+public class GetUserEndpoint : IEndpoint<GetUserRequest, Response<GetUserResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Get("/users/{id}")
+            .Tags("Users")
+            .Summary("Get a user by ID");
+    }
+
+    public async Task<Response<GetUserResponse>> HandleAsync(
+        GetUserRequest request,
+        CancellationToken cancel)
+    {
+        var user = await _repository.FindByIdAsync(request.Id, cancel);
+
+        if (user is null)
+        {
+            return new Response<GetUserResponse>
+            {
+                StatusCode = HttpStatusCode.NotFound,
+                Body       = new GetUserResponse { Id = 0, Name = string.Empty },
+            };
+        }
+
+        return new Response<GetUserResponse>
+        {
+            Body = new GetUserResponse { Id = user.Id, Name = user.Name },
+        };
+    }
+}
+```
+
+## Custom binding with BindAsync
+
+For custom binding (e.g. multipart/form-data), implement the Minimal API `BindAsync` convention on the request type. AxisEndpoints detects it automatically:
+
+```csharp
+public class UploadRequest
+{
+    public required IFormFile File { get; init; }
+
+    public static async ValueTask<UploadRequest> BindAsync(HttpContext context)
+    {
+        var form = await context.Request.ReadFormAsync();
+        var file = form.Files["file"] ?? throw new BadHttpRequestException("'file' field is required.");
+        return new UploadRequest { File = file };
+    }
+}
+```
+
+For CSV-specific binding, see the [CSV Import](/extensions/csv-helper/csv-import/) guide.

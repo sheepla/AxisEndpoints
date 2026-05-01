@@ -1,0 +1,64 @@
+---
+title: "Filters"
+description: "Add custom IEndpointFilter implementations to individual endpoints or groups."
+---
+
+Implement `IEndpointFilter` and register it with `config.AddFilter<TFilter>()`. Filters are resolved from DI per request, so constructor injection is supported. Registering a filter on a group applies it to all endpoints in that group.
+
+```csharp
+public class LoggingFilter : IEndpointFilter
+{
+    private readonly ILogger<LoggingFilter> _logger;
+
+    public LoggingFilter(ILogger<LoggingFilter> logger) => _logger = logger;
+
+    public async ValueTask<object?> InvokeAsync(
+        EndpointFilterInvocationContext context,
+        EndpointFilterDelegate next)
+    {
+        _logger.LogInformation("{Method} {Path}",
+            context.HttpContext.Request.Method,
+            context.HttpContext.Request.Path);
+
+        var result = await next(context);
+
+        _logger.LogInformation("Response: {StatusCode}",
+            context.HttpContext.Response.StatusCode);
+
+        return result;
+    }
+}
+```
+
+## Per-endpoint
+
+```csharp
+public class MyEndpoint : IEndpoint<MyRequest, Response<MyResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Post("/items").AddFilter<LoggingFilter>();
+    }
+    // ...
+}
+```
+
+## Group-level
+
+Filters applied to a group affect all endpoints in that group:
+
+```csharp
+public class MyGroup : IEndpointGroup
+{
+    public void Configure(IEndpointGroupConfiguration config)
+    {
+        config.Prefix("/api/items").AddFilter<LoggingFilter>();
+    }
+}
+```
+
+## Difference from middleware
+
+`IEndpointFilter` differs from middleware in that it can be scoped to individual endpoints or groups, rather than applying globally to all requests.
+
+For a FluentValidation example using `IEndpointFilter`, see the [Validation](/guides/validation/) guide. For grouping endpoints, see the [Endpoint Groups](/guides/endpoint-groups/) guide.

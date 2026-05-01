@@ -1,0 +1,45 @@
+---
+title: "CSV Import"
+description: "Import CSV data into typed rows using CsvRequest<TRow>."
+---
+
+Derive your request type from `CsvRequest<TRow>`. After binding, `request.Rows` contains the parsed rows as `IReadOnlyList<TRow>`.
+
+Minimal API requires `BindAsync` to be declared as a non-generic static method on the concrete type, so it cannot be provided by the base class. Declare it in the derived class and delegate to `BindCsvAsync<T>`:
+
+```csharp
+public sealed class UserImportRow
+{
+    [Name("name")]  public string Name  { get; init; } = string.Empty;
+    [Name("email")] public string Email { get; init; } = string.Empty;
+    [Name("role")]  public string Role  { get; init; } = string.Empty;
+}
+
+public sealed class ImportUsersRequest : CsvRequest<UserImportRow>
+{
+    public static ValueTask<ImportUsersRequest> BindAsync(HttpContext context)
+        => BindCsvAsync<ImportUsersRequest>(context);
+}
+
+public sealed class ImportUsersEndpoint : IEndpoint<ImportUsersRequest, Response<EmptyResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Post("/users/import")
+            .AddFilter<CsvBindingExceptionFilter>()
+            .Summary("Import users from CSV");
+    }
+
+    public Task<Response<EmptyResponse>> HandleAsync(
+        ImportUsersRequest request,
+        CancellationToken cancel)
+    {
+        foreach (var row in request.Rows) { /* persist row */ }
+        return Task.FromResult(Response.NoContent);
+    }
+}
+```
+
+Both `text/csv` direct body and `multipart/form-data` file uploads are supported automatically.
+
+For per-row validation, see [Row Validation](/extensions/csv-helper/row-validation/). For custom column mapping, see [Class Map](/extensions/csv-helper/class-map/).
