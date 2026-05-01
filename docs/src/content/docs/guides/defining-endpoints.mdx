@@ -1,0 +1,97 @@
+---
+title: "Defining Endpoints"
+description: "Learn how to define endpoints using IEndpoint with different request and response types."
+---
+
+## JSON response — `Response<TBody>`
+
+Use `IEndpoint<TRequest, Response<TBody>>` for POST, PUT, and PATCH endpoints where `TRequest` is bound from the JSON request body.
+
+```csharp
+public class CreateUserRequest
+{
+    public required string Name { get; init; }
+    public required string Email { get; init; }
+}
+
+public class CreateUserResponse
+{
+    public required int Id { get; init; }
+}
+
+public class CreateUserEndpoint : IEndpoint<CreateUserRequest, Response<CreateUserResponse>>
+{
+    private readonly IUserRepository _repository;
+
+    public CreateUserEndpoint(IUserRepository repository) => _repository = repository;
+
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Post("/users")
+            .Tags("Users")
+            .Summary("Create a new user");
+    }
+
+    public async Task<Response<CreateUserResponse>> HandleAsync(
+        CreateUserRequest request,
+        CancellationToken cancel)
+    {
+        var id = await _repository.CreateAsync(request.Name, request.Email, cancel);
+
+        return new Response<CreateUserResponse>
+        {
+            StatusCode = HttpStatusCode.Created,
+            Headers    = [("Location", $"/users/{id}")],
+            Body       = new CreateUserResponse { Id = id },
+        };
+    }
+}
+```
+
+## No response body — `Response<EmptyResponse>`
+
+Use `Response<EmptyResponse>` for endpoints that return no body. The `Response.NoContent` shorthand returns 204 No Content in a single expression.
+
+```csharp
+public class DeleteUserEndpoint : IEndpoint<DeleteUserRequest, Response<EmptyResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Delete("/users/{id}").Summary("Delete a user");
+    }
+
+    public Task<Response<EmptyResponse>> HandleAsync(
+        DeleteUserRequest request,
+        CancellationToken cancel)
+    {
+        // delete user ...
+        return Task.FromResult(Response.NoContent);
+    }
+}
+```
+
+`Response.Empty` is the 200 OK equivalent for the same no-body pattern.
+
+## No request parameters — `IEndpoint<TResult>`
+
+Use `IEndpoint<TResult>` when the endpoint takes no parameters at all. If query parameters are needed, define a request type with `[FromQuery]` properties and use `IEndpoint<TRequest, TResult>` instead.
+
+```csharp
+public class HealthEndpoint : IEndpoint<Response<HealthResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Get("/health").AllowAnonymous();
+    }
+
+    public Task<Response<HealthResponse>> HandleAsync(CancellationToken cancel)
+    {
+        return Task.FromResult(new Response<HealthResponse>
+        {
+            Body = new HealthResponse { Status = "ok", Timestamp = DateTimeOffset.UtcNow },
+        });
+    }
+}
+```
+
+For details on how response types work, see the [Response Types](/guides/response-types/) guide.

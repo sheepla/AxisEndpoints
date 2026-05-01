@@ -1,0 +1,31 @@
+---
+title: "CSV Helper"
+description: "Add typed CSV import and export to your AxisEndpoints with the CsvHelper extension package."
+---
+
+The `AxisEndpoints.Extensions.CsvHelper` package adds typed CSV import and export to AxisEndpoints endpoints, backed by [CsvHelper](https://joshclose.github.io/CsvHelper/).
+
+## Installation
+
+```sh
+dotnet add package AxisEndpoints.Extensions.CsvHelper
+```
+
+## Setup
+
+Register the extension services in `Program.cs`:
+
+```csharp
+using AxisEndpoints.Extensions;
+using AxisEndpoints.Extensions.CsvHelper;
+
+builder.Services.AddAxisEndpoints();
+builder.Services.AddAxisEndpointsCsvHelper(); // registers CsvBindingExceptionFilter
+```
+
+## Next steps
+
+- [CSV Import](/extensions/csv-helper/csv-import/) — parse incoming CSV data into typed rows
+- [CSV Export](/extensions/csv-helper/csv-export/) — stream typed rows as a CSV download
+- [Row Validation](/extensions/csv-helper/row-validation/) — validate each row with DataAnnotations
+- [Class Map](/extensions/csv-helper/class-map/) — customize column-to-property mapping

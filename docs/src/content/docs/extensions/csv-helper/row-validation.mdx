@@ -1,0 +1,28 @@
+---
+title: "Row Validation"
+description: "Validate CSV rows with DataAnnotations and surface errors as structured responses."
+---
+
+DataAnnotations attributes on `TRow` are validated during binding, one row at a time. All errors are collected before the handler is invoked and surfaced as an RFC 9457 `ValidationProblem` response by `CsvBindingExceptionFilter`.
+
+Error keys follow the pattern `"row {n}: {MemberName}"`:
+
+```json
+{
+  "status": 400,
+  "errors": {
+    "row 3: Email": ["The Email field is not a valid e-mail address."],
+    "row 5: Name":  ["The Name field is required."]
+  }
+}
+```
+
+## Registering the filter
+
+Register `CsvBindingExceptionFilter` on any endpoint that accepts a `CsvRequest<TRow>` parameter:
+
+```csharp
+config.Post("/users/import").AddFilter<CsvBindingExceptionFilter>();
+```
+
+For general DataAnnotations validation on request types, see the [Validation](/guides/validation/) guide.
