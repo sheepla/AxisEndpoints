@@ -471,7 +471,22 @@ internal static class EndpointRegistry
 
         if (config.ResponseType is not null)
         {
-            routeBuilder.Produces(200, config.ResponseType);
+            // When TResult is Response<TBody>, register Produces(200) automatically from the
+            // inferred response type. When TResult is IResult, skip auto-registration — the
+            // caller is responsible for declaring response shapes via ProducesSuccess/ProducesError.
+            var isIResult =
+                config.ResponseType == typeof(IResult)
+                || typeof(IResult).IsAssignableFrom(config.ResponseType);
+
+            if (!isIResult)
+            {
+                routeBuilder.Produces(200, config.ResponseType);
+            }
+        }
+
+        foreach (var (statusCode, bodyType) in config.ExtraProducesEntries)
+        {
+            routeBuilder.Produces(statusCode, bodyType);
         }
     }
 
