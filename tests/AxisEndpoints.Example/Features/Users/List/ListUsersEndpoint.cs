@@ -32,6 +32,9 @@ public class ListUsersEndpoint : IEndpoint<ListUsersRequest, Response<ListUsersR
         CancellationToken cancel
     )
     {
+        var page = request.Page ?? 1;
+        var pageSize = request.PageSize ?? 20;
+
         // Dummy data — a real implementation would query a repository.
         var allUsers = new List<UserResponse>
         {
@@ -70,8 +73,8 @@ public class ListUsersEndpoint : IEndpoint<ListUsersRequest, Response<ListUsersR
             : allUsers;
 
         var items = filtered
-            .Skip((request.Page - 1) * request.PageSize)
-            .Take(request.PageSize)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToList();
 
         return Task.FromResult(
@@ -80,8 +83,8 @@ public class ListUsersEndpoint : IEndpoint<ListUsersRequest, Response<ListUsersR
                 Body = new ListUsersResponse
                 {
                     Items = items,
-                    Page = request.Page,
-                    PageSize = request.PageSize,
+                    Page = page,
+                    PageSize = pageSize,
                     TotalCount = filtered.Count,
                 },
             }

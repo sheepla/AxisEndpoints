@@ -3,10 +3,14 @@ using Microsoft.AspNetCore.Http;
 namespace AxisEndpoints.Extensions.CsvHelper;
 
 /// <summary>
-/// An endpoint filter that catches <see cref="CsvBindingException"/> thrown during CSV
-/// request binding and converts it to an RFC 9457 <c>ValidationProblem</c> response,
-/// consistent with the error shape produced by AxisEndpoints' built-in
+/// An endpoint filter that inspects <see cref="CsvRequest{TRow}.BindingErrors"/> collected
+/// during CSV request binding and converts them to an RFC 9457 <c>ValidationProblem</c>
+/// response, consistent with the error shape produced by AxisEndpoints' built-in
 /// DataAnnotations validation filter.
+///
+/// Because <c>BindAsync</c> executes before the endpoint filter pipeline, the previous
+/// approach of catching <see cref="CsvBindingException"/> in a try/catch could never work.
+/// This filter instead checks the bound request argument for deferred errors.
 ///
 /// Register this filter on endpoints that accept a <see cref="CsvRequest{TRow}"/> parameter:
 /// <code>
@@ -20,13 +24,14 @@ public sealed class CsvBindingExceptionFilter : IEndpointFilter
         EndpointFilterDelegate next
     )
     {
-        try
+        foreach (var argument in context.Arguments)
         {
-            return await next(context);
+            if (argument is ICsvBindingErrors { BindingErrors: { Count: > 0 } errors })
+            {
+                return TypedResults.ValidationProblem(errors);
+            }
         }
-        catch (CsvBindingException ex)
-        {
-            return TypedResults.ValidationProblem(ex.Errors);
-        }
+
+        return await next(context);
     }
 }
