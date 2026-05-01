@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using AxisEndpoints.Example.Features.Users;
 using AxisEndpoints.Example.Features.Users.List;
 using FluentAssertions;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AxisEndpoints.Example.Tests;
 
@@ -76,6 +77,9 @@ public class ListUsersEndpointTests : IClassFixture<ExampleWebApplicationFactory
         var response = await _client.GetAsync("/api/users?page=0");
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+        body.Should().NotBeNull();
+        body!.Errors.Should().ContainKey("Page");
     }
 
     [Fact]
@@ -84,5 +88,8 @@ public class ListUsersEndpointTests : IClassFixture<ExampleWebApplicationFactory
         var response = await _client.GetAsync("/api/users?pageSize=0");
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+        body.Should().NotBeNull();
+        body!.Errors.Should().ContainKey("PageSize");
     }
 }
