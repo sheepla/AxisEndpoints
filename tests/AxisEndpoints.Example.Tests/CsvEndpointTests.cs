@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using AxisEndpoints.Extensions.CsvHelper;
 using FluentAssertions;
 
 namespace AxisEndpoints.Example.Tests;
@@ -62,6 +63,8 @@ public class CsvEndpointTests : IClassFixture<ExampleWebApplicationFactory>
 
         var act = () => _client.PostAsync("/api/users/users/import", content);
 
-        await act.Should().ThrowAsync<Exception>();
+        await act.Should()
+            .ThrowAsync<Exception>()
+            .Where(ex => ex.ToString().Contains(nameof(CsvBindingException)));
     }
 }
