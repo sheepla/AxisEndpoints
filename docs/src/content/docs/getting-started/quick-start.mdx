@@ -3,69 +3,97 @@ title: "Quick Start"
 description: "Set up AxisEndpoints in your ASP.NET Core project and create your first endpoint."
 ---
 
-## Setup in Program.cs
+import { Steps } from '@astrojs/starlight/components';
 
-Call `AddAxisEndpoints()` on the service collection and `MapAxisEndpoints()` on the application. Both methods scan the entry assembly automatically. Pass an `Assembly` argument to target a specific project.
+<Steps>
+1. **プロジェクトを作成する**
 
-```csharp
-using AxisEndpoints.Extensions;
+   ```sh
+   dotnet new webapi -n MyApi
+   cd MyApi
+   ```
 
-var builder = WebApplication.CreateBuilder(args);
+2. **AxisEndpoints をインストールする**
 
-builder.Services.AddOpenApi();
-builder.Services.AddAxisEndpoints(); // Discovers and registers all endpoints
+   ```sh
+   dotnet add package AxisEndpoints
+   ```
 
-var app = builder.Build();
+3. **Program.cs をセットアップする**
 
-app.MapOpenApi();
-app.MapAxisEndpoints(); // Maps all discovered endpoints to the Minimal API pipeline
+   `Program.cs` を以下のように編集します。`AddAxisEndpoints()` はエントリアセンブリをスキャンし、`IEndpoint` インタフェースを実装するすべてのクラスを自動的にDIコンテナに登録します。`MapAxisEndpoints()` は登録されたエンドポイントをMinimal APIパイプラインにマッピングします。
 
-app.Run();
-```
+   `IEndpointFilter` を実装するフィルタクラスも同様に、アセンブリスキャンで自動的にDIコンテナに登録されます。
 
-## Your first endpoint
+   ```csharp
+   using AxisEndpoints.Extensions;
 
-Here is a complete example of a POST endpoint that creates a user and returns a JSON response:
+   var builder = WebApplication.CreateBuilder(args);
 
-```csharp
-public class CreateUserRequest
-{
-    public required string Name { get; init; }
-    public required string Email { get; init; }
-}
+   builder.Services.AddOpenApi();
+   builder.Services.AddAxisEndpoints();
 
-public class CreateUserResponse
-{
-    public required int Id { get; init; }
-}
+   var app = builder.Build();
 
-public class CreateUserEndpoint : IEndpoint<CreateUserRequest, Response<CreateUserResponse>>
-{
-    private readonly IUserRepository _repository;
+   app.MapOpenApi();
+   app.MapAxisEndpoints();
 
-    public CreateUserEndpoint(IUserRepository repository) => _repository = repository;
+   app.Run();
+   ```
 
-    public void Configure(IEndpointConfiguration config)
-    {
-        config.Post("/users")
-            .Tags("Users")
-            .Summary("Create a new user");
-    }
+4. **最初のエンドポイントを作成する**
 
-    public async Task<Response<CreateUserResponse>> HandleAsync(
-        CreateUserRequest request,
-        CancellationToken cancel)
-    {
-        var id = await _repository.CreateAsync(request.Name, request.Email, cancel);
+   以下は、ユーザーを作成して JSON レスポンスを返す POST エンドポイントの例です:
 
-        return new Response<CreateUserResponse>
-        {
-            StatusCode = HttpStatusCode.Created,
-            Headers    = [("Location", $"/users/{id}")],
-            Body       = new CreateUserResponse { Id = id },
-        };
-    }
-}
-```
+   ```csharp
+   public class CreateUserRequest
+   {
+       public required string Name { get; init; }
+       public required string Email { get; init; }
+   }
+
+   public class CreateUserResponse
+   {
+       public required int Id { get; init; }
+   }
+
+   public class CreateUserEndpoint : IEndpoint<CreateUserRequest, Response<CreateUserResponse>>
+   {
+       private readonly IUserRepository _repository;
+
+       public CreateUserEndpoint(IUserRepository repository) => _repository = repository;
+
+       public void Configure(IEndpointConfiguration config)
+       {
+           config.Post("/users")
+               .Tags("Users")
+               .Summary("Create a new user");
+       }
+
+       public async Task<Response<CreateUserResponse>> HandleAsync(
+           CreateUserRequest request,
+           CancellationToken cancel)
+       {
+           var id = await _repository.CreateAsync(request.Name, request.Email, cancel);
+
+           return new Response<CreateUserResponse>
+           {
+               StatusCode = HttpStatusCode.Created,
+               Headers    = [("Location", $"/users/{id}")],
+               Body       = new CreateUserResponse { Id = id },
+           };
+       }
+   }
+   ```
+
+5. **実行して確認する**
+
+   ```sh
+   dotnet run
+   ```
+
+   `http://localhost:5000/users` に POST リクエストを送信してエンドポイントが動作することを確認します。
+
+</Steps>
 
 For more details on defining endpoints, see the [Defining Endpoints](/guides/defining-endpoints/) guide.

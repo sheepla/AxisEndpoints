@@ -1,0 +1,39 @@
+---
+title: "FAQ"
+description: "AxisEndpoints に関するよくある質問と回答をまとめています。"
+---
+
+## なぜ AxisEndpoints を作ったのですか？
+
+REPR（Request-Endpoint-Response）パターンを ASP.NET Core で実装するにあたり、Minimal API をベースとした明示的なインタフェースを提供し、型安全で OpenAPI-first な設計を備えたライブラリが見当たらなかったためです。
+
+[FastEndpoints](https://fast-endpoints.com/) のような既存ライブラリは強力ですが、ASP.NET Core 標準の規約から離れた独自の抽象化を多く導入しており、学習コストが高くなりがちです。AxisEndpoints は、Minimal API の知識がそのまま活きるよう、標準 API サーフェスに近い設計を目指しています。
+
+## REPR パターンは本当に必要ですか？
+
+プロジェクトの規模と性質によります。小規模な API であれば Minimal API で十分ですし、CRUD 操作がメインなら Controller も有力な選択肢です。ただし、それぞれにトレードオフがあります。
+
+- **Minimal API** はエンドポイントが増えると管理が難しくなります
+- **Controller** はクラスが肥大化しがちです
+
+REPR パターンは各エンドポイントを自己完結させることで機能間の干渉を防ぎ、安定してスケールできます。特に Vertical Slice Architecture を採用する場合におすすめです。
+
+プロジェクトの特性に合わせて使い分けてください。トップページの比較表も参照してください: [Why REPR?](/)
+
+## OpenAPI に型情報が載りません
+
+`HandleAsync` の戻り値が `IResult` の場合、フレームワークはレスポンスの型を自動推論できません。`Configure()` 内で `.ProducesSuccess<TBody>()` と `.ProducesError(HttpStatusCode)` を明示的に指定してください。
+
+```csharp
+public void Configure(IEndpointConfiguration config)
+{
+    config
+        .Get("/users/{id}")
+        .ProducesSuccess<UserResponse>()
+        .ProducesError(HttpStatusCode.NotFound);
+}
+```
+
+`Response<TBody>` を返す場合は 200 のスキーマが自動登録されるため、これらの指定は不要です。
+
+詳しくは [Error Responses](/guides/error-responses/) ガイドを参照してください。
