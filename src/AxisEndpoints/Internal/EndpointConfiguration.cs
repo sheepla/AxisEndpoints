@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AxisEndpoints.Internal;
 
@@ -24,6 +26,10 @@ internal sealed class EndpointConfiguration : IEndpointConfiguration
 
     // Filter types are stored in registration order and applied during MapEndpoints.
     internal List<Type> FilterTypes { get; } = [];
+
+    // Explicit OpenAPI response declarations from ProducesSuccess/ProducesError.
+    // Used when HandleAsync returns IResult and the response schema cannot be inferred.
+    internal List<(int StatusCode, Type BodyType)> ExtraProducesEntries { get; } = [];
 
     IEndpointConfiguration IEndpointConfiguration.Get([StringSyntax("Route")] string route) =>
         SetMethod(HttpEndpointMethod.Get, route);
@@ -103,6 +109,24 @@ internal sealed class EndpointConfiguration : IEndpointConfiguration
     IEndpointConfiguration IEndpointConfiguration.Description(string description)
     {
         DescriptionText = description;
+        return this;
+    }
+
+    IEndpointConfiguration IEndpointConfiguration.ProducesSuccess<TBody>(HttpStatusCode statusCode)
+    {
+        ExtraProducesEntries.Add(((int)statusCode, typeof(TBody)));
+        return this;
+    }
+
+    IEndpointConfiguration IEndpointConfiguration.ProducesError(HttpStatusCode statusCode)
+    {
+        ExtraProducesEntries.Add(((int)statusCode, typeof(ProblemDetails)));
+        return this;
+    }
+
+    IEndpointConfiguration IEndpointConfiguration.ProducesError<TError>(HttpStatusCode statusCode)
+    {
+        ExtraProducesEntries.Add(((int)statusCode, typeof(TError)));
         return this;
     }
 

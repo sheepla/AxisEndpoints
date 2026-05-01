@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 
@@ -38,6 +39,27 @@ public interface IEndpointConfiguration
     IEndpointConfiguration Tags(params string[] tags);
     IEndpointConfiguration Summary(string summary);
     IEndpointConfiguration Description(string description);
+
+    // OpenAPI response metadata for IResult-returning endpoints.
+    // When HandleAsync returns Response<TBody>, the 200 schema is inferred automatically and
+    // these methods are not needed. Use them when the return type is IResult to declare the
+    // success and error response shapes explicitly.
+
+    /// <summary>
+    /// Declares a success response for OpenAPI. Use when HandleAsync returns <see cref="IResult"/>
+    /// and the 200 schema cannot be inferred automatically.
+    /// </summary>
+    IEndpointConfiguration ProducesSuccess<TBody>(HttpStatusCode statusCode = HttpStatusCode.OK);
+
+    /// <summary>
+    /// Declares an error response with <see cref="Microsoft.AspNetCore.Mvc.ProblemDetails"/> as the body type.
+    /// </summary>
+    IEndpointConfiguration ProducesError(HttpStatusCode statusCode);
+
+    /// <summary>
+    /// Declares an error response with a custom body type.
+    /// </summary>
+    IEndpointConfiguration ProducesError<TError>(HttpStatusCode statusCode);
 
     // Filters — applied in registration order, outermost first
     IEndpointConfiguration AddFilter<TFilter>()

@@ -1,15 +1,17 @@
 using System.Net;
 using AxisEndpoints;
+using Microsoft.AspNetCore.Http;
 
 namespace AxisEndpoints.Example.Features.Users.FindById;
 
 /// <summary>
 /// Demonstrates:
-///   - IEndpoint&lt;TRequest, TResult&gt; with [FromRoute] binding (GET)
+///   - IEndpoint&lt;TRequest, IResult&gt; for endpoints that return multiple response shapes
+///   - ProducesSuccess / ProducesError for explicit OpenAPI schema declaration
 ///   - EndpointContext: reading the Accept-Language request header
-///   - Conditional 404 response
+///   - 404 ProblemDetails response when the resource is not found
 /// </summary>
-public class FindByIdEndpoint : IEndpoint<FindByIdRequest, Response<UserResponse>>
+public class FindByIdEndpoint : IEndpoint<FindByIdRequest, IResult>
 {
     private readonly EndpointContext _context;
 
@@ -26,13 +28,12 @@ public class FindByIdEndpoint : IEndpoint<FindByIdRequest, Response<UserResponse
             .Summary("Find a user by ID")
             .Description(
                 "Returns a single user. Reads Accept-Language to demonstrate EndpointContext header access."
-            );
+            )
+            .ProducesSuccess<UserResponse>()
+            .ProducesError(HttpStatusCode.NotFound);
     }
 
-    public Task<Response<UserResponse>> HandleAsync(
-        FindByIdRequest request,
-        CancellationToken cancel
-    )
+    public Task<IResult> HandleAsync(FindByIdRequest request, CancellationToken cancel)
     {
         // Demonstrate EndpointContext: read Accept-Language from request headers.
         var language = _context.RequestHeaders["Accept-Language"].FirstOrDefault() ?? "en";
@@ -41,31 +42,24 @@ public class FindByIdEndpoint : IEndpoint<FindByIdRequest, Response<UserResponse
         if (request.Id != 1)
         {
             return Task.FromResult(
-                new Response<UserResponse>
-                {
-                    StatusCode = HttpStatusCode.NotFound,
-                    Body = new UserResponse
-                    {
-                        Id = 0,
-                        Name = string.Empty,
-                        Email = string.Empty,
-                        Role = string.Empty,
-                    },
-                }
+                Results.Problem(
+                    statusCode: (int)HttpStatusCode.NotFound,
+                    title: "User not found",
+                    detail: $"No user with ID {request.Id} exists."
+                )
             );
         }
 
         return Task.FromResult(
-            new Response<UserResponse>
-            {
-                Body = new UserResponse
+            Results.Json(
+                new UserResponse
                 {
                     Id = 1,
                     Name = language.StartsWith("ja") ? "山田 太郎" : "Alice",
                     Email = "alice@example.com",
                     Role = "User",
-                },
-            }
+                }
+            )
         );
     }
 }

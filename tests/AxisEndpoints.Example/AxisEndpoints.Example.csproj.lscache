@@ -2,12 +2,10 @@ version=1
 
 # This file caches language service data to improve the performance of C# Dev Kit.
 # It is not intended for manual editing. It can safely be deleted and will be
-# regenerated automatically.
+# regenerated automatically. For more information, see https://aka.ms/lscache
 #
-# To exclude from version control, add *.lscache to your .gitignore file.
-#
-# To disable caching, add the following to your VS Code settings:
-#   "dotnet.projectsystem.enableLanguageServiceCache": false
+# To control where cache files are stored, use the following VS Code setting:
+#   "dotnet.projectsystem.cacheInProjectFolder": true
 
 [project]
 language=C#
@@ -98,12 +96,7 @@ Program.cs
 ../../src/
  AxisEndpoints.Extensions.CsvHelper/obj/Debug/net10.0/ref/AxisEndpoints.Extensions.CsvHelper.dll
  AxisEndpoints/obj/Debug/net10.0/ref/AxisEndpoints.dll
-<NUGET>/
- csvhelper/33.1.0/lib/net9.0/CsvHelper.dll
- microsoft.aspnetcore.openapi/10.0.0/lib/net10.0/Microsoft.AspNetCore.OpenApi.dll
- microsoft.openapi/2.0.0/lib/net8.0/Microsoft.OpenApi.dll
- scalar.aspnetcore/2.5.5/lib/net9.0/Scalar.AspNetCore.dll
-C:/Program Files/dotnet/packs/Microsoft.AspNetCore.App.Ref/10.0.2/ref/net10.0/
+<DOTNET>/packs/Microsoft.AspNetCore.App.Ref/10.0.2/ref/net10.0/
  Microsoft.AspNetCore.Antiforgery.dll
  Microsoft.AspNetCore.Authentication.Abstractions.dll
  Microsoft.AspNetCore.Authentication.BearerToken.dll
@@ -244,7 +237,7 @@ C:/Program Files/dotnet/packs/Microsoft.AspNetCore.App.Ref/10.0.2/ref/net10.0/
  System.Formats.Cbor.dll
  System.Security.Cryptography.Xml.dll
  System.Threading.RateLimiting.dll
-C:/Program Files/dotnet/packs/Microsoft.NETCore.App.Ref/10.0.2/ref/net10.0/
+<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.2/ref/net10.0/
  Microsoft.CSharp.dll
  Microsoft.VisualBasic.Core.dll
  Microsoft.VisualBasic.dll
@@ -412,10 +405,14 @@ C:/Program Files/dotnet/packs/Microsoft.NETCore.App.Ref/10.0.2/ref/net10.0/
  System.Xml.XPath.dll
  System.Xml.XPath.XDocument.dll
  WindowsBase.dll
+<NUGET>/
+ csvhelper/33.1.0/lib/net9.0/CsvHelper.dll
+ microsoft.aspnetcore.openapi/10.0.0/lib/net10.0/Microsoft.AspNetCore.OpenApi.dll
+ microsoft.openapi/2.0.0/lib/net8.0/Microsoft.OpenApi.dll
+ scalar.aspnetcore/2.5.5/lib/net9.0/Scalar.AspNetCore.dll
 
 [analyzerReferences]
-<NUGET>/microsoft.aspnetcore.openapi/10.0.0/analyzers/dotnet/cs/Microsoft.AspNetCore.OpenApi.SourceGenerators.dll
-C:/Program Files/dotnet/packs/Microsoft.AspNetCore.App.Ref/10.0.2/analyzers/dotnet/cs/
+<DOTNET>/packs/Microsoft.AspNetCore.App.Ref/10.0.2/analyzers/dotnet/cs/
  Microsoft.AspNetCore.App.Analyzers.dll
  Microsoft.AspNetCore.App.CodeFixes.dll
  Microsoft.AspNetCore.App.SourceGenerators.dll
@@ -423,24 +420,25 @@ C:/Program Files/dotnet/packs/Microsoft.AspNetCore.App.Ref/10.0.2/analyzers/dotn
  Microsoft.Extensions.Logging.Generators.dll
  Microsoft.Extensions.Options.SourceGeneration.dll
  Microsoft.Extensions.Validation.ValidationsGenerator.dll
-C:/Program Files/dotnet/packs/Microsoft.NETCore.App.Ref/10.0.2/analyzers/dotnet/cs/
+<DOTNET>/packs/Microsoft.NETCore.App.Ref/10.0.2/analyzers/dotnet/cs/
  Microsoft.Interop.ComInterfaceGenerator.dll
  Microsoft.Interop.JavaScript.JSImportGenerator.dll
  Microsoft.Interop.LibraryImportGenerator.dll
  Microsoft.Interop.SourceGeneration.dll
  System.Text.Json.SourceGeneration.dll
  System.Text.RegularExpressions.Generator.dll
-C:/Program Files/dotnet/sdk/10.0.102/Sdks/Microsoft.NET.Sdk.Razor/source-generators/
+<DOTNET>/sdk/10.0.102/Sdks/Microsoft.NET.Sdk.Razor/source-generators/
  Microsoft.AspNetCore.Razor.Utilities.Shared.dll
  Microsoft.CodeAnalysis.Razor.Compiler.dll
  Microsoft.Extensions.ObjectPool.dll
-C:/Program Files/dotnet/sdk/10.0.102/Sdks/Microsoft.NET.Sdk.Web/analyzers/cs/
+<DOTNET>/sdk/10.0.102/Sdks/Microsoft.NET.Sdk.Web/analyzers/cs/
  Microsoft.AspNetCore.Analyzers.dll
  Microsoft.AspNetCore.Mvc.Analyzers.dll
-C:/Program Files/dotnet/sdk/10.0.102/Sdks/Microsoft.NET.Sdk/analyzers/
+<DOTNET>/sdk/10.0.102/Sdks/Microsoft.NET.Sdk/analyzers/
  Microsoft.CodeAnalysis.CSharp.NetAnalyzers.dll
  Microsoft.CodeAnalysis.NetAnalyzers.dll
+<NUGET>/microsoft.aspnetcore.openapi/10.0.0/analyzers/dotnet/cs/Microsoft.AspNetCore.OpenApi.SourceGenerators.dll
 
 [analyzerConfigFiles]
-C:/Program Files/dotnet/sdk/10.0.102/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
+<DOTNET>/sdk/10.0.102/Sdks/Microsoft.NET.Sdk/analyzers/build/config/analysislevel_10_default.globalconfig
 obj/Debug/net10.0/AxisEndpoints.Example.GeneratedMSBuildEditorConfig.editorconfig

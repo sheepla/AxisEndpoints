@@ -29,6 +29,9 @@
       - [Require a dynamically constructed policy](#require-a-dynamically-constructed-policy)
       - [Allow anonymous access](#allow-anonymous-access)
       - [Group-level authorization](#group-level-authorization)
+    - [Error responses](#error-responses)
+      - [ProblemDetails](#problemdetails)
+      - [Custom error type](#custom-error-type)
     - [Accessing HTTP context](#accessing-http-context)
     - [Grouping multiple endpoints](#grouping-multiple-endpoints)
     - [Adding custom filters](#adding-custom-filters)
@@ -135,6 +138,7 @@ app.Run();
 | JSON response                    | `Response<TBody>`            | `return new Response<UserResponse> { Body = user }`                                      |
 | JSON with status code or headers | `Response<TBody>`            | `return new Response<UserResponse> { StatusCode = HttpStatusCode.Created, Body = user }` |
 | No response body                 | `Response<EmptyResponse>`    | `return Response.NoContent`                                                              |
+| Multiple response shapes         | `IResult`                    | `return Results.Problem(...)` or `Results.Json(...)`                                     |
 | CSV export or other stream       | `IResult` implementation     | `return Task.FromResult(CsvResponse.From(rows))`                                         |
 | Fully custom response            | Any `IResult` implementation | `return Task.FromResult(new MyCustomResult(...))`                                        |
 
@@ -600,6 +604,96 @@ public class MyGroup : IEndpointGroup
 ```
 
 `IEndpointFilter` differs from middleware in that it can be scoped to individual endpoints or groups, rather than applying globally to all requests.
+
+### Error responses
+
+`Response<TBody>` is designed for the success path. When an endpoint needs to return different response shapes depending on the outcome — for example, a `UserResponse` on success and a `ProblemDetails` on failure — change the return type to `IResult` and declare each response shape explicitly via `ProducesSuccess` and `ProducesError`.
+
+These methods exist solely to register OpenAPI response metadata. The actual response is constructed in `HandleAsync` using `Results.*` helpers. The framework cannot verify that the declared types match what `HandleAsync` actually returns, so keeping declarations and implementation in sync is the caller's responsibility.
+
+#### ProblemDetails
+
+`ProducesError(HttpStatusCode)` registers a `ProblemDetails` response for the given status code. This is the default choice for standard HTTP error responses.
+
+```csharp
+public class FindByIdEndpoint : IEndpoint<FindByIdRequest, IResult>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config
+            .Get("/{id}")
+            .Group<UsersEndpointGroup>()
+            .ProducesSuccess<UserResponse>()
+            .ProducesError(HttpStatusCode.NotFound);
+    }
+
+    public Task<IResult> HandleAsync(FindByIdRequest request, CancellationToken cancel)
+    {
+        if (request.Id != 1)
+        {
+            return Task.FromResult(
+                Results.Problem(
+                    statusCode: (int)HttpStatusCode.NotFound,
+                    title: "User not found",
+                    detail: $"No user with ID {request.Id} exists."
+                )
+            );
+        }
+
+        return Task.FromResult(Results.Json(new UserResponse { Id = 1, Name = "Alice", ... }));
+    }
+}
+```
+
+Multiple `ProducesError` calls can be chained to declare several error shapes:
+
+```csharp
+config
+    .Post("/")
+    .ProducesSuccess<OrderResponse>(HttpStatusCode.Created)
+    .ProducesError(HttpStatusCode.NotFound)
+    .ProducesError(HttpStatusCode.Conflict);
+```
+
+#### Custom error type
+
+`ProducesError<TError>(HttpStatusCode)` registers an arbitrary type as the error body. Use this when the error response carries domain-specific fields beyond what `ProblemDetails` provides.
+
+```csharp
+public record ValidationErrorResponse(IReadOnlyList<string> Errors);
+
+public class CreateOrderEndpoint : IEndpoint<CreateOrderRequest, IResult>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config
+            .Post("/orders")
+            .ProducesSuccess<OrderResponse>(HttpStatusCode.Created)
+            .ProducesError<ValidationErrorResponse>(HttpStatusCode.UnprocessableEntity);
+    }
+
+    public Task<IResult> HandleAsync(CreateOrderRequest request, CancellationToken cancel)
+    {
+        var errors = Validate(request);
+        if (errors.Count > 0)
+        {
+            return Task.FromResult(
+                Results.Json(
+                    new ValidationErrorResponse(errors),
+                    statusCode: (int)HttpStatusCode.UnprocessableEntity
+                )
+            );
+        }
+
+        var order = CreateOrder(request);
+        return Task.FromResult(Results.Json(order, statusCode: (int)HttpStatusCode.Created));
+    }
+}
+```
+
+`ProducesSuccess`, `ProducesError`, and `ProducesError<TError>` can be mixed freely in the same `Configure` call.
+
+> **Note** — When `HandleAsync` returns `Response<TBody>`, the 200 schema is registered automatically and `ProducesSuccess` is not needed. `ProducesSuccess` is only required when the return type is `IResult`.
 
 ## CSV extension — AxisEndpoints.Extensions.CsvHelper
 
