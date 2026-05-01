@@ -21,4 +21,8 @@
     <!-- WebApplication, IHttpContextAccessor など ASP.NET Core の型を使うために必要 -->
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="AxisEndpoints.Tests" />
+  </ItemGroup>
 </Project>
