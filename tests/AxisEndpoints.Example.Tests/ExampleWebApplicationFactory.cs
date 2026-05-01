@@ -11,9 +11,11 @@ namespace AxisEndpoints.Example.Tests;
 public class ExampleWebApplicationFactory : IAsyncLifetime, IDisposable
 {
     private WebApplication? _app;
+    private HttpClient? _client;
     private static readonly Assembly ExampleAssembly = typeof(HealthEndpoint).Assembly;
 
-    public HttpClient Client { get; private set; } = null!;
+    public HttpClient Client =>
+        _client ?? throw new InvalidOperationException("Test client is not initialized.");
 
     public async Task InitializeAsync()
     {
@@ -27,21 +29,23 @@ public class ExampleWebApplicationFactory : IAsyncLifetime, IDisposable
         _app.MapAxisEndpoints(ExampleAssembly);
 
         await _app.StartAsync();
-        Client = _app.GetTestClient();
+        _client = _app.GetTestClient();
     }
 
     public async Task DisposeAsync()
     {
-        Client.Dispose();
+        _client?.Dispose();
+        _client = null;
         if (_app is not null)
         {
             await _app.StopAsync();
             await _app.DisposeAsync();
+            _app = null;
         }
     }
 
     public void Dispose()
     {
-        DisposeAsync().GetAwaiter().GetResult();
+        // IAsyncLifetime.DisposeAsync() is called by xUnit; this is a no-op fallback.
     }
 }

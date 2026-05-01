@@ -17,12 +17,15 @@ public class HealthEndpointTests : IClassFixture<ExampleWebApplicationFactory>
     [Fact]
     public async Task GetHealth_Returns200WithStatus()
     {
+        var before = DateTimeOffset.UtcNow;
         var response = await _client.GetAsync("/health");
+        var after = DateTimeOffset.UtcNow;
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<HealthResponse>();
         body.Should().NotBeNull();
         body!.Status.Should().Be("ok");
-        body.Timestamp.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(10));
+        body.Timestamp.Should().BeOnOrAfter(before.AddSeconds(-1));
+        body.Timestamp.Should().BeOnOrBefore(after.AddSeconds(1));
     }
 }
