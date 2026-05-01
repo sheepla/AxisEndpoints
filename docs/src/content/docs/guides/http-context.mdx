@@ -1,0 +1,40 @@
+---
+title: "HTTP Context"
+description: "Access request headers, user claims, and other HTTP context data in AxisEndpoints."
+---
+
+For reading request headers, accessing the authenticated user, or inspecting route values beyond what `TRequest` covers, inject `EndpointContext` via the constructor. Avoid injecting it when typed request/response is sufficient.
+
+```csharp
+public class FindByIdEndpoint : IEndpoint<FindByIdRequest, Response<UserResponse>>
+{
+    private readonly EndpointContext _context;
+
+    public FindByIdEndpoint(EndpointContext context) => _context = context;
+
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Get("/users/{id}").Summary("Get a user by ID");
+    }
+
+    public Task<Response<UserResponse>> HandleAsync(
+        FindByIdRequest request,
+        CancellationToken cancel)
+    {
+        var language = _context.RequestHeaders["Accept-Language"].FirstOrDefault() ?? "en";
+        // ...
+    }
+}
+```
+
+## EndpointContext members
+
+| Member               | Type                | Description                                              |
+| -------------------- | ------------------- | -------------------------------------------------------- |
+| `RequestHeaders`     | `IHeaderDictionary` | Incoming request headers                                 |
+| `User`               | `ClaimsPrincipal`   | The authenticated user                                   |
+| `Query`              | `IQueryCollection`  | Raw query string values                                  |
+| `GetRouteValue(key)` | `string?`           | A single route parameter by name                         |
+| `RawResponse`        | `HttpResponse`      | Escape hatch for writing directly to the response stream |
+
+`RawResponse` is intended for cases that `Response<TBody>` and extension packages cannot cover. For CSV output, the [CSV Helper extension](/extensions/csv-helper/) is the preferred approach.

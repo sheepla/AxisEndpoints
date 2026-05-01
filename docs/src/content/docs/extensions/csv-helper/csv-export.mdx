@@ -1,0 +1,38 @@
+---
+title: "CSV Export"
+description: "Stream typed rows as a CSV download using CsvResponse<TRow>."
+---
+
+Return `CsvResponse<TRow>` directly from `HandleAsync`. It implements `IResult`, so the framework streams the rows to the response without buffering the entire dataset in memory.
+
+```csharp
+public sealed class UserExportRow
+{
+    [Name("id")]    public int    Id    { get; init; }
+    [Name("name")]  public string Name  { get; init; } = string.Empty;
+    [Name("email")] public string Email { get; init; } = string.Empty;
+}
+
+public sealed class ExportUsersEndpoint : IEndpoint<CsvResponse<UserExportRow>>
+{
+    private readonly IUserRepository _repository;
+
+    public ExportUsersEndpoint(IUserRepository repository) => _repository = repository;
+
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Get("/users/export").Summary("Export users as CSV");
+    }
+
+    public Task<CsvResponse<UserExportRow>> HandleAsync(CancellationToken cancel)
+    {
+        // IAsyncEnumerable<T> is written row-by-row without loading everything into memory.
+        var rows = _repository.GetAllAsync(cancel);
+        return Task.FromResult(CsvResponse.From(rows, fileName: "users.csv"));
+    }
+}
+```
+
+`CsvResponse.From` also accepts `IEnumerable<T>` for synchronous sequences.
+
+For custom column mapping on export, see [Class Map](/extensions/csv-helper/class-map/).
