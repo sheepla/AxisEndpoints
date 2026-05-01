@@ -168,7 +168,15 @@ public abstract class CsvRequest<TRow> : ICsvBindingErrors
         {
             var memberName = result.MemberNames.FirstOrDefault() ?? "(unknown)";
             var key = $"row {rowNumber}: {memberName}";
-            errors[key] = [result.ErrorMessage ?? "Validation failed."];
+            var message = result.ErrorMessage ?? "Validation failed.";
+            if (errors.TryGetValue(key, out var existing))
+            {
+                errors[key] = [..existing, message];
+            }
+            else
+            {
+                errors[key] = [message];
+            }
         }
     }
 }
