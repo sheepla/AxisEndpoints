@@ -18,7 +18,7 @@ public class ListUsersEndpointTests : IClassFixture<ExampleWebApplicationFactory
     [Fact]
     public async Task ListUsers_DefaultPagination_ReturnsAllUsers()
     {
-        var response = await _client.GetAsync("/api/users?page=1&pageSize=20");
+        var response = await _client.GetAsync("/api/users");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<ListUsersResponse>();
@@ -30,7 +30,7 @@ public class ListUsersEndpointTests : IClassFixture<ExampleWebApplicationFactory
     }
 
     [Fact]
-    public async Task ListUsers_WithPagination_ReturnsPagedResults()
+    public async Task ListUsers_WithExplicitPagination_ReturnsPagedResults()
     {
         var response = await _client.GetAsync("/api/users?page=1&pageSize=2");
 
@@ -46,7 +46,7 @@ public class ListUsersEndpointTests : IClassFixture<ExampleWebApplicationFactory
     [Fact]
     public async Task ListUsers_WithRoleFilter_ReturnsFilteredResults()
     {
-        var response = await _client.GetAsync("/api/users?role=Admin&page=1&pageSize=20");
+        var response = await _client.GetAsync("/api/users?role=Admin");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<ListUsersResponse>();
@@ -70,16 +70,18 @@ public class ListUsersEndpointTests : IClassFixture<ExampleWebApplicationFactory
         body.Items[1].Name.Should().Be("Diana");
     }
 
-    /// <summary>
-    /// When page/pageSize query parameters are omitted, [AsParameters] binding
-    /// uses the CLR default (0) instead of the property initializer values (1, 20).
-    /// DataAnnotations [Range(1, ...)] validation then rejects 0, returning 400.
-    /// This is a known limitation of [AsParameters] with value-type defaults.
-    /// </summary>
     [Fact]
-    public async Task ListUsers_OmittedPaginationParams_Returns400DueToDefaultValueLimitation()
+    public async Task ListUsers_InvalidPage_Returns400()
     {
-        var response = await _client.GetAsync("/api/users");
+        var response = await _client.GetAsync("/api/users?page=0");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task ListUsers_InvalidPageSize_Returns400()
+    {
+        var response = await _client.GetAsync("/api/users?pageSize=0");
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
