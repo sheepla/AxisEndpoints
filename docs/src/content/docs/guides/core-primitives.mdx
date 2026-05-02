@@ -98,42 +98,6 @@ flowchart TD
     I --> H
 ```
 
----
-
-## Type Relationships
-
-The following diagram shows how the core types relate to each other.
-
-```mermaid
-classDiagram
-    class IEndpoint_TRequest_TResult {
-        +Configure(IEndpointConfiguration config)
-        +HandleAsync(TRequest request, CancellationToken cancel) Task~TResult~
-    }
-    class IEndpoint_TResult {
-        +Configure(IEndpointConfiguration config)
-        +HandleAsync(CancellationToken cancel) Task~TResult~
-    }
-    class Response_TBody {
-        +StatusCode HttpStatusCode
-        +Headers IReadOnlyList
-        +Body TBody
-    }
-    class EmptyResponse
-    class IEndpointGroup {
-        +Configure(IEndpointGroupConfiguration config)
-    }
-    class EndpointContext {
-        +RequestHeaders IHeaderDictionary
-        +User ClaimsPrincipal
-        +Query IQueryCollection
-        +GetRouteValue(key) string?
-        +RawResponse HttpResponse
-    }
-```
-
----
-
 ## Notes on ASP.NET Core Standard Types
 
 AxisEndpoints builds directly on ASP.NET Core standard types. The types below are not AxisEndpoints-specific, so standard Minimal API knowledge applies as-is.
@@ -142,10 +106,16 @@ AxisEndpoints builds directly on ASP.NET Core standard types. The types below ar
 
 This interface is provided by ASP.NET Core Minimal APIs and represents an HTTP response. It is produced by factory methods such as `Results.Json()`, `Results.Problem()`, `Results.Ok()`, and `Results.NotFound()`. In AxisEndpoints, specifying `IResult` as the return type of `HandleAsync` lets you return different response shapes based on the outcome, such as JSON on success and `ProblemDetails` on error.
 
+> [IResult - Microsoft docs](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.http.iresult) 
+
 ### `ProblemDetails`
 
 `Microsoft.AspNetCore.Mvc.ProblemDetails` provides the standard error response format defined by RFC 9457 (formerly RFC 7807). It includes fields such as `type`, `title`, `status`, `detail`, and `errors`, which bring consistency to API error responses. AxisEndpoints' DataAnnotations validation filter also returns validation errors in this format.
 
+>  [ProblemDetails - Microsoft docs](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.mvc.problemdetails)
+
 ### `IEndpointFilter`
 
 This filter interface is provided by ASP.NET Core Minimal APIs and lets you insert logic into the request pipeline. Unlike middleware, it can be scoped to specific endpoints or groups, which gives you finer control over cross-cutting concerns.
+
+> [IEndpointFilter - Microsoft docs](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.http.iendpointfilter) 
