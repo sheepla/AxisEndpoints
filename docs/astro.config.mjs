@@ -6,8 +6,14 @@ import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 import mermaid from "astro-mermaid";
 
+const repositoryName = process.env.GITHUB_REPOSITORY?.split("/")[1];
+const site = process.env.SITE_URL ?? "https://sheepla.github.io";
+const base = process.env.BASE_PATH ?? (repositoryName ? `/${repositoryName}` : "/");
+
 // https://astro.build/config
 export default defineConfig({
+  site,
+  base,
   integrations: [
     mermaid(),
     starlight({
