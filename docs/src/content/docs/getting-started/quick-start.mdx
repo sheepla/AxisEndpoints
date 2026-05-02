@@ -43,7 +43,7 @@ import { Steps } from '@astrojs/starlight/components';
 
 4. **Create your first endpoint**
 
-   Here is an example of a POST endpoint that creates a user and returns a JSON response:
+    Create a new class `CreateUserEndpoint` that implements `IEndpoint<CreateUserRequest, Response<CreateUserResponse>>` at `CreateUserEndpoint.cs`. This endpoint will handle POST requests to create a new user.
 
    ```csharp
    public class CreateUserRequest
