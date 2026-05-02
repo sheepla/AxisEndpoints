@@ -1,32 +1,36 @@
 ---
 title: "Quick Start"
-description: "Set up AxisEndpoints in your ASP.NET Core project and create your first endpoint."
+description: "Create a minimal AxisEndpoints project from scratch and verify it with Scalar."
 ---
 
 import { Steps } from '@astrojs/starlight/components';
 
 <Steps>
-1. **Create a project**
+1. **Create a new project**
 
    ```sh
-   dotnet new webapi -n MyApi
-   cd MyApi
+   dotnet new webapi -n AxisEndpoints.Tutorial
+   cd AxisEndpoints.Tutorial
    ```
 
-2. **Install AxisEndpoints**
+2. **Install the packages**
 
    ```sh
    dotnet add package AxisEndpoints
+   dotnet add package Scalar.AspNetCore
    ```
 
-3. **Set up Program.cs**
+   `AxisEndpoints` provides endpoint discovery and mapping. `Scalar.AspNetCore` gives you a browser-based API reference so you can verify the endpoint immediately.
 
-   Update `Program.cs` as shown below. `AddAxisEndpoints()` scans the entry assembly and automatically registers every class that implements the `IEndpoint` interface in the DI container. `MapAxisEndpoints()` maps the registered endpoints to the Minimal API pipeline.
+3. **Replace `Program.cs`**
 
-   Filter classes that implement `IEndpointFilter` are also registered automatically through assembly scanning.
+   Use the same minimal setup as [`tests/AxisEndpoints.Tutorial/Program.cs`](</C:/Users/admin/ghq/github.com/sheepla/AxisEndpoints/tests/AxisEndpoints.Tutorial/Program.cs>):
+
+   `AddAxisEndpoints()` scans the entry assembly and registers endpoint classes in DI. `MapAxisEndpoints()` then maps those endpoints into the Minimal API pipeline.
 
    ```csharp
    using AxisEndpoints.Extensions;
+   using Scalar.AspNetCore;
 
    var builder = WebApplication.CreateBuilder(args);
 
@@ -37,63 +41,101 @@ import { Steps } from '@astrojs/starlight/components';
 
    app.MapOpenApi();
    app.MapAxisEndpoints();
+   app.MapScalarApiReference();
 
    app.Run();
    ```
 
-4. **Create your first endpoint**
+4. **Add your first endpoint**
 
-    Create a new class `CreateUserEndpoint` that implements `IEndpoint<CreateUserRequest, Response<CreateUserResponse>>` at `CreateUserEndpoint.cs`. This endpoint will handle POST requests to create a new user.
+   Create `Features/Hello/HelloEndpoint.cs` and paste in the tutorial endpoint below.
+
+   ```text
+   AxisEndpoints.Tutorial/
+   |- Features/
+   |  \- Hello/
+   |     \- HelloEndpoint.cs
+   \- Program.cs
+   ```
 
    ```csharp
-   public class CreateUserRequest
+   using AxisEndpoints;
+
+   namespace AxisEndpoints.Tutorial.Features.Hello;
+
+   public record HelloRequest
    {
-       public required string Name { get; init; }
-       public required string Email { get; init; }
+       public required string Name { get; set; } = string.Empty;
    }
 
-   public class CreateUserResponse
+   public record HelloResponse
    {
-       public required int Id { get; init; }
+       public required string Message { get; set; } = string.Empty;
    }
 
-   public class CreateUserEndpoint : IEndpoint<CreateUserRequest, Response<CreateUserResponse>>
+   public class HelloEndpoint(ILogger<HelloEndpoint> logger)
+       : IEndpoint<HelloRequest, Response<HelloResponse>>
    {
-       private readonly IUserRepository _repository;
-
-       public CreateUserEndpoint(IUserRepository repository) => _repository = repository;
-
        public void Configure(IEndpointConfiguration config)
        {
-           config.Post("/users")
-               .Tags("Users")
-               .Summary("Create a new user");
+           config
+               .Get("/hello")
+               .Summary("Hello")
+               .Description("This endpoint takes a name as input and returns a greeting message.");
        }
 
-       public async Task<Response<CreateUserResponse>> HandleAsync(
-           CreateUserRequest request,
+       public Task<Response<HelloResponse>> HandleAsync(
+           HelloRequest request,
            CancellationToken cancel)
        {
-           var id = await _repository.CreateAsync(request.Name, request.Email, cancel);
+           logger.LogInformation("Received request to /hello with name: {Name}", request.Name);
 
-           return new Response<CreateUserResponse>
-           {
-               StatusCode = HttpStatusCode.Created,
-               Headers    = [("Location", $"/users/{id}")],
-               Body       = new CreateUserResponse { Id = id },
-           };
+           return Task.FromResult(
+               new Response<HelloResponse>
+               {
+                   Body = new HelloResponse { Message = $"Hello, {request.Name}!" },
+               }
+           );
        }
    }
    ```
 
-5. **Run and verify**
+   Because this is a `GET` endpoint, `HelloRequest.Name` is bound from the query string. A request to `/hello?name=Alice` will populate `request.Name` with `Alice`.
+
+5. **Run the app**
 
    ```sh
    dotnet run
    ```
 
-   Send a POST request to `http://localhost:5000/users` to verify that the endpoint works.
+6. **Verify the endpoint**
+
+   Open the Scalar API reference at `http://localhost:5173/scalar` and try `GET /hello` with a `name` query parameter.
+
+   You can also call the endpoint directly:
+
+   ```sh
+   curl "http://localhost:5173/hello?name=Alice"
+   ```
+
+   The response should look like this:
+
+   ```json
+   {
+     "message": "Hello, Alice!"
+   }
+   ```
 
 </Steps>
 
-For more details on defining endpoints, see the [Defining Endpoints](/guides/defining-endpoints/) guide.
+## What You Should See
+
+The tutorial project included in this repository uses the same setup and exposes the Scalar UI after startup.
+
+<img
+  src="/images/tutorial-scalar.png"
+  alt="Scalar API reference showing the tutorial hello endpoint"
+  style={{ borderRadius: '0.75rem', border: '1px solid var(--sl-color-hairline-light)', width: '100%' }}
+/>
+
+For more details on endpoint structure and request binding, see [Defining Endpoints](/guides/defining-endpoints/) and [Request Binding](/guides/request-binding/).
