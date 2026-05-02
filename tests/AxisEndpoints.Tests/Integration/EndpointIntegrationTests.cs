@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json.Nodes;
 using FluentAssertions;
 
 namespace AxisEndpoints.Tests.Integration;
@@ -68,5 +69,54 @@ public class EndpointIntegrationTests : IClassFixture<TestWebApplicationFactory>
         var body = await response.Content.ReadFromJsonAsync<HelloResponse>();
         body.Should().NotBeNull();
         body!.Message.Should().Be("Grouped!");
+    }
+
+    [Fact]
+    public async Task PostCreatedHello_Returns201WithMessage()
+    {
+        var response = await _client.PostAsync("/hello-created", content: null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.Content.ReadFromJsonAsync<HelloResponse>();
+        body.Should().NotBeNull();
+        body!.Message.Should().Be("Created!");
+    }
+
+    [Fact]
+    public async Task OpenApi_UsesResponseBodyTypeInsteadOfResponseWrapper()
+    {
+        var document = await _client.GetFromJsonAsync<JsonObject>("/openapi/v1.json");
+
+        document.Should().NotBeNull();
+
+        var schema = document!["paths"]?["/hello"]?["get"]?["responses"]?["200"]?["content"]?["application/json"]?["schema"];
+        schema.Should().NotBeNull();
+        schema!["$ref"]!.GetValue<string>().Should().Be("#/components/schemas/HelloResponse");
+
+        document["components"]?["schemas"]?["ResponseOfHelloResponse"].Should().BeNull();
+
+        var createdSchema = document["paths"]?["/hello-created"]?["post"]?["responses"]?["201"]?["content"]?["application/json"]?["schema"];
+        createdSchema.Should().NotBeNull();
+        createdSchema!["$ref"]!.GetValue<string>().Should().Be("#/components/schemas/HelloResponse");
+    }
+
+    [Fact]
+    public async Task OpenApi_DoesNotRegisterEmptyResponseAsJsonBody()
+    {
+        var document = await _client.GetFromJsonAsync<JsonObject>("/openapi/v1.json");
+
+        document.Should().NotBeNull();
+
+        var responses = document!["paths"]?["/items/{id}"]?["delete"]?["responses"]?.AsObject();
+        responses.Should().NotBeNull();
+
+        responses!.ContainsKey("200").Should().BeFalse();
+
+        var successResponse = responses["204"];
+        successResponse.Should().NotBeNull();
+        successResponse!["content"]?["application/json"]?["schema"].Should().BeNull();
+
+        document["components"]?["schemas"]?["ResponseOfEmptyResponse"].Should().BeNull();
+        document["components"]?["schemas"]?["EmptyResponse"].Should().BeNull();
     }
 }

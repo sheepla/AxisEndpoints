@@ -40,14 +40,16 @@ public interface IEndpointConfiguration
     IEndpointConfiguration Summary(string summary);
     IEndpointConfiguration Description(string description);
 
-    // OpenAPI response metadata for IResult-returning endpoints.
-    // When HandleAsync returns Response<TBody>, the 200 schema is inferred automatically and
-    // these methods are not needed. Use them when the return type is IResult to declare the
-    // success and error response shapes explicitly.
+    // OpenAPI response metadata.
+    // When HandleAsync returns Response<TBody>, a 200 success response is inferred automatically.
+    // Use ProducesSuccess to override that default when the endpoint returns a different success
+    // status code such as 201 or 204. When HandleAsync returns IResult, use ProducesSuccess and
+    // ProducesError to declare the response shapes explicitly.
 
     /// <summary>
-    /// Declares a success response for OpenAPI. Use when HandleAsync returns <see cref="IResult"/>
-    /// and the 200 schema cannot be inferred automatically.
+    /// Declares a success response for OpenAPI. Use this to override the default 200 response
+    /// metadata for <see cref="Response{TBody}"/> endpoints or to declare success metadata when
+    /// HandleAsync returns <see cref="IResult"/>.
     /// </summary>
     IEndpointConfiguration ProducesSuccess<TBody>(HttpStatusCode statusCode = HttpStatusCode.OK);
 

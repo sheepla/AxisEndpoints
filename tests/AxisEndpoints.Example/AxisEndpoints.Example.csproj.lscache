@@ -73,7 +73,6 @@ Features/
   FindById/
    FindByIdEndpoint.cs
    FindByIdRequest.cs
-   FindUserByIdRequest.cs
   ImportFromCsv/ImportFromCsvEndpoint.cs
   List/
    ListUsersEndpoint.cs

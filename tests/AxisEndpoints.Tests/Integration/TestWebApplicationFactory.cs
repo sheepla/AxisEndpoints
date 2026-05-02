@@ -2,6 +2,7 @@ using System.Reflection;
 using AxisEndpoints.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace AxisEndpoints.Tests.Integration;
@@ -17,9 +18,11 @@ public class TestWebApplicationFactory : IAsyncLifetime, IDisposable
     {
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
+        builder.Services.AddOpenApi();
         builder.Services.AddAxisEndpoints(_testAssembly);
 
         _app = builder.Build();
+        _app.MapOpenApi();
         _app.MapAxisEndpoints(_testAssembly);
 
         await _app.StartAsync();
