@@ -1,5 +1,3 @@
-using AxisEndpoints;
-
 namespace AxisEndpoints.Example.Features.Users.List;
 
 public class ListUsersResponse
@@ -72,10 +70,7 @@ public class ListUsersEndpoint : IEndpoint<ListUsersRequest, Response<ListUsersR
             ? allUsers.Where(u => u.Role == request.Role).ToList()
             : allUsers;
 
-        var items = filtered
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+        var items = filtered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
         return Task.FromResult(
             new Response<ListUsersResponse>

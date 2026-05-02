@@ -22,7 +22,7 @@ public class FindByIdEndpointTests : IClassFixture<ExampleWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<UserResponse>();
         body.Should().NotBeNull();
-        body!.Id.Should().Be(1);
+        body.Id.Should().Be(1);
         body.Name.Should().Be("Alice");
         body.Email.Should().Be("alice@example.com");
     }
@@ -46,6 +46,6 @@ public class FindByIdEndpointTests : IClassFixture<ExampleWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<UserResponse>();
         body.Should().NotBeNull();
-        body!.Name.Should().Contain("山田");
+        body.Name.Should().Contain("山田");
     }
 }

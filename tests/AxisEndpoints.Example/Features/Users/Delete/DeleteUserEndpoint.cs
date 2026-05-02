@@ -1,4 +1,3 @@
-using AxisEndpoints;
 using System.Net;
 
 namespace AxisEndpoints.Example.Features.Users.Delete;

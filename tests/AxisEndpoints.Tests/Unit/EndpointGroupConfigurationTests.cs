@@ -75,14 +75,14 @@ public class EndpointGroupConfigurationTests
     {
         _config.AddFilter<DummyFilter>();
 
-        Internal.FilterTypes.Should().ContainSingle()
-            .Which.Should().Be(typeof(DummyFilter));
+        Internal.FilterTypes.Should().ContainSingle().Which.Should().Be(typeof(DummyFilter));
     }
 
     private sealed class DummyFilter : IEndpointFilter
     {
         public ValueTask<object?> InvokeAsync(
             EndpointFilterInvocationContext context,
-            EndpointFilterDelegate next) => next(context);
+            EndpointFilterDelegate next
+        ) => next(context);
     }
 }

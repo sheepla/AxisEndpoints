@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using AxisEndpoints.Example.Features.Users;
 using AxisEndpoints.Example.Features.Users.List;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
@@ -24,7 +23,7 @@ public class ListUsersEndpointTests : IClassFixture<ExampleWebApplicationFactory
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<ListUsersResponse>();
         body.Should().NotBeNull();
-        body!.TotalCount.Should().Be(4);
+        body.TotalCount.Should().Be(4);
         body.Items.Should().HaveCount(4);
         body.Page.Should().Be(1);
         body.PageSize.Should().Be(20);
@@ -38,7 +37,7 @@ public class ListUsersEndpointTests : IClassFixture<ExampleWebApplicationFactory
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<ListUsersResponse>();
         body.Should().NotBeNull();
-        body!.Items.Should().HaveCount(2);
+        body.Items.Should().HaveCount(2);
         body.TotalCount.Should().Be(4);
         body.Page.Should().Be(1);
         body.PageSize.Should().Be(2);
@@ -52,7 +51,7 @@ public class ListUsersEndpointTests : IClassFixture<ExampleWebApplicationFactory
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<ListUsersResponse>();
         body.Should().NotBeNull();
-        body!.TotalCount.Should().Be(1);
+        body.TotalCount.Should().Be(1);
         body.Items.Should().ContainSingle();
         body.Items[0].Name.Should().Be("Alice");
         body.Items[0].Role.Should().Be("Admin");
@@ -66,7 +65,7 @@ public class ListUsersEndpointTests : IClassFixture<ExampleWebApplicationFactory
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<ListUsersResponse>();
         body.Should().NotBeNull();
-        body!.Items.Should().HaveCount(2);
+        body.Items.Should().HaveCount(2);
         body.Items[0].Name.Should().Be("Charlie");
         body.Items[1].Name.Should().Be("Diana");
     }
@@ -79,7 +78,7 @@ public class ListUsersEndpointTests : IClassFixture<ExampleWebApplicationFactory
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
         body.Should().NotBeNull();
-        body!.Errors.Should().ContainKey("Page");
+        body.Errors.Should().ContainKey("Page");
     }
 
     [Fact]
@@ -90,6 +89,6 @@ public class ListUsersEndpointTests : IClassFixture<ExampleWebApplicationFactory
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
         body.Should().NotBeNull();
-        body!.Errors.Should().ContainKey("PageSize");
+        body.Errors.Should().ContainKey("PageSize");
     }
 }

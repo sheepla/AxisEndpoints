@@ -2,7 +2,6 @@ using System.Net;
 using System.Reflection;
 using AxisEndpoints.Internal;
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace AxisEndpoints.Tests.Unit;
@@ -27,11 +26,7 @@ public class ResponseExecutorTests
     public void ToResult_WithCreatedStatus_ReturnsCorrectStatusCode()
     {
         var dto = new TestDto("created");
-        var response = new Response<TestDto>
-        {
-            StatusCode = HttpStatusCode.Created,
-            Body = dto,
-        };
+        var response = new Response<TestDto> { StatusCode = HttpStatusCode.Created, Body = dto };
 
         var result = ResponseExecutor.ToResult(response);
 
@@ -56,20 +51,19 @@ public class ResponseExecutorTests
     public void ToResult_WithHeaders_ReturnsHeadersResult()
     {
         var dto = new TestDto("with-headers");
-        var response = new Response<TestDto>
-        {
-            Body = dto,
-            Headers = [("X-Custom", "value")],
-        };
+        var response = new Response<TestDto> { Body = dto, Headers = [("X-Custom", "value")] };
 
         var result = ResponseExecutor.ToResult(response);
 
         result.Should().BeOfType<HeadersResult>();
         var headersResult = (HeadersResult)result;
 
-        var headersField = typeof(HeadersResult)
-            .GetField("_headers", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        var headers = (IReadOnlyList<(string Name, string Value)>)headersField.GetValue(headersResult)!;
+        var headersField = typeof(HeadersResult).GetField(
+            "_headers",
+            BindingFlags.NonPublic | BindingFlags.Instance
+        )!;
+        var headers =
+            (IReadOnlyList<(string Name, string Value)>)headersField.GetValue(headersResult)!;
         headers.Should().ContainSingle().Which.Should().Be(("X-Custom", "value"));
     }
 

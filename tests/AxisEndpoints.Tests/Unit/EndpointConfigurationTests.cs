@@ -136,7 +136,8 @@ public class EndpointConfigurationTests
     [Fact]
     public void RequireAuthorization_Policy_AfterRoles_ClearsRoles()
     {
-        _config.Get("/test")
+        _config
+            .Get("/test")
             .RequireAuthorization("Admin", "User")
             .RequireAuthorization("PolicyName");
 
@@ -149,8 +150,11 @@ public class EndpointConfigurationTests
     {
         _config.Get("/test").ProducesSuccess<string>(HttpStatusCode.OK);
 
-        Internal.ExtraProducesEntries.Should().ContainSingle()
-            .Which.Should().Be((200, typeof(string)));
+        Internal
+            .ExtraProducesEntries.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be((200, typeof(string)));
     }
 
     [Fact]
@@ -158,8 +162,11 @@ public class EndpointConfigurationTests
     {
         _config.Get("/test").ProducesError(HttpStatusCode.NotFound);
 
-        Internal.ExtraProducesEntries.Should().ContainSingle()
-            .Which.Should().Be((404, typeof(Microsoft.AspNetCore.Mvc.ProblemDetails)));
+        Internal
+            .ExtraProducesEntries.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be((404, typeof(Microsoft.AspNetCore.Mvc.ProblemDetails)));
     }
 
     [Fact]
@@ -167,14 +174,14 @@ public class EndpointConfigurationTests
     {
         _config.Get("/test").AddFilter<DummyFilter>();
 
-        Internal.FilterTypes.Should().ContainSingle()
-            .Which.Should().Be(typeof(DummyFilter));
+        Internal.FilterTypes.Should().ContainSingle().Which.Should().Be(typeof(DummyFilter));
     }
 
     private sealed class DummyFilter : IEndpointFilter
     {
         public ValueTask<object?> InvokeAsync(
             EndpointFilterInvocationContext context,
-            EndpointFilterDelegate next) => next(context);
+            EndpointFilterDelegate next
+        ) => next(context);
     }
 }

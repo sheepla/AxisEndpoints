@@ -34,7 +34,7 @@ public class CsvEndpointTests : IClassFixture<ExampleWebApplicationFactory>
         var response = await _client.GetAsync("/api/users/users/export");
 
         response.Content.Headers.ContentDisposition.Should().NotBeNull();
-        response.Content.Headers.ContentDisposition!.FileName.Should().Be("users.csv");
+        response.Content.Headers.ContentDisposition.FileName.Should().Be("users.csv");
     }
 
     [Fact]
