@@ -31,14 +31,16 @@
 
 ## Packages
 
+Packages are available on nuget.org.
+
 | Package                              | Description                                                                                                                                                    |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AxisEndpoints`                      | Core package. Provides `IEndpoint<TRequest, TResult>` and related primitives.                                                                                  |
-| `AxisEndpoints.Extensions.CsvHelper` | Optional. Integrates CsvHelper for typed CSV import (`CsvRequest<TRow>`) and streaming export (`CsvResponse<TRow>`). |
+| [AxisEndpoints](https://www.nuget.org/packages/AxisEndpoints)                      | Core package. Provides `IEndpoint<TRequest, TResult>` and related primitives.                                                                                  |
+| [AxisEndpoints.Extensions.CsvHelper](https://www.nuget.org/packages/AxisEndpoints.Extensions.CsvHelpe) | Optional. Integrates CsvHelper for typed CSV import (`CsvRequest<TRow>`) and streaming export (`CsvResponse<TRow>`). |
 
 ## Installation
 
-### Install from nuget.org
+### Install from nuget.org (Recommended)
 
 ```sh
 dotnet add package AxisEndpoints
