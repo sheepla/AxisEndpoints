@@ -58,6 +58,7 @@ CsvBindingException.cs
 CsvBindingExceptionFilter.cs
 CsvRequest.cs
 CsvResponse.cs
+ICsvBindingErrors.cs
 obj/Debug/net10.0/
  .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
  AxisEndpoints.Extensions.CsvHelper.AssemblyInfo.cs

@@ -20,6 +20,7 @@ public class CreateUserEndpoint : IEndpoint<CreateUserRequest, Response<UserResp
             .Group<UsersEndpointGroup>()
             .Summary("Create a user")
             .Description("Creates a new user. Returns 400 if validation fails.")
+            .ProducesSuccess<UserResponse>(HttpStatusCode.Created)
             .AddFilter<AuditFilter>();
     }
 

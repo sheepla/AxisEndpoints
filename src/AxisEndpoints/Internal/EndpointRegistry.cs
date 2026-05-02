@@ -474,20 +474,55 @@ internal static class EndpointRegistry
             // When TResult is Response<TBody>, register Produces(200) automatically from the
             // inferred response type. When TResult is IResult, skip auto-registration — the
             // caller is responsible for declaring response shapes via ProducesSuccess/ProducesError.
+            var openApiResponseType = GetOpenApiResponseType(config.ResponseType);
             var isIResult =
-                config.ResponseType == typeof(IResult)
-                || typeof(IResult).IsAssignableFrom(config.ResponseType);
+                openApiResponseType == typeof(IResult)
+                || typeof(IResult).IsAssignableFrom(openApiResponseType);
+            var hasExplicitSuccessResponse = config.ExtraProducesEntries.Any(entry =>
+                entry.StatusCode is >= 200 and < 300
+            );
 
-            if (!isIResult)
+            if (!isIResult && !hasExplicitSuccessResponse)
             {
-                routeBuilder.Produces(200, config.ResponseType);
+                RegisterProduces(routeBuilder, 200, openApiResponseType);
             }
         }
 
         foreach (var (statusCode, bodyType) in config.ExtraProducesEntries)
         {
-            routeBuilder.Produces(statusCode, bodyType);
+            RegisterProduces(routeBuilder, statusCode, bodyType);
         }
+    }
+
+    private static Type GetOpenApiResponseType(Type responseType)
+    {
+        if (
+            responseType.IsGenericType
+            && responseType.GetGenericTypeDefinition() == typeof(Response<>)
+        )
+        {
+            return responseType.GetGenericArguments()[0];
+        }
+
+        return responseType;
+    }
+
+    private static void RegisterProduces(
+        RouteHandlerBuilder routeBuilder,
+        int statusCode,
+        Type bodyType
+    )
+    {
+        var isNoBodyResponse =
+            bodyType == typeof(EmptyResponse) || typeof(EmptyResponse).IsAssignableFrom(bodyType);
+
+        if (isNoBodyResponse)
+        {
+            routeBuilder.Produces(statusCode);
+            return;
+        }
+
+        routeBuilder.Produces(statusCode, bodyType);
     }
 
     private static void ApplyGroupMetadata(
