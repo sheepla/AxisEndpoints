@@ -35,4 +35,30 @@ public sealed class ExportUsersEndpoint : IEndpoint<CsvResponse<UserExportRow>>
 
 `CsvResponse.From` also accepts `IEnumerable<T>` for synchronous sequences.
 
+## `CsvResponse.From` Parameters
+
+`CsvResponse.From` accepts the following parameters:
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `rows` | `IAsyncEnumerable<TRow>` or `IEnumerable<TRow>` | *(required)* | Sequence of rows to write as CSV |
+| `classMap` | `ClassMap?` | `null` | Column mapping and formatting configuration through CsvHelper `ClassMap`. If `null`, CsvHelper convention-based mapping and attributes on `TRow` are used |
+| `fileName` | `string` | `"export.csv"` | File name written to the `Content-Disposition` header |
+| `statusCode` | `HttpStatusCode` | `HttpStatusCode.OK` | HTTP status code |
+| `configuration` | `CsvConfiguration?` | `null` | CsvHelper writer configuration. If `null`, the default configuration using `CultureInfo.InvariantCulture` is applied |
+
+```csharp
+// Example with all parameters specified
+CsvResponse.From(
+    rows,
+    classMap: new UserRowMap(),
+    fileName: "users-export.csv",
+    statusCode: HttpStatusCode.OK,
+    configuration: new CsvConfiguration(CultureInfo.InvariantCulture)
+    {
+        Delimiter = "\t"
+    }
+);
+```
+
 For custom column mapping on export, see [Class Map](/extensions/csv-helper/class-map/).

@@ -3,6 +3,20 @@ title: "Filters"
 description: "Add custom IEndpointFilter implementations to individual endpoints or groups."
 ---
 
+## What Is a Filter?
+
+`IEndpointFilter` is an interface provided by ASP.NET Core Minimal APIs. It lets you run logic before and after a request reaches the handler.
+
+### How It Differs from Middleware
+
+Middleware is applied globally to all requests, while filters can be scoped to specific endpoints or groups. This lets you apply cross-cutting concerns such as audit logging, validation, or rate limiting only where they are needed.
+
+### Registering Filters in AxisEndpoints
+
+In AxisEndpoints, register filters with `config.AddFilter<TFilter>()`. Filters are resolved from the DI container, so constructor injection works as expected. Filter classes are also registered automatically by `AddAxisEndpoints()` assembly scanning, so manual registration is not required.
+
+---
+
 Implement `IEndpointFilter` and register it with `config.AddFilter<TFilter>()`. Filters are resolved from DI per request, so constructor injection is supported. Registering a filter on a group applies it to all endpoints in that group.
 
 ```csharp

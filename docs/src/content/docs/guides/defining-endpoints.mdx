@@ -3,6 +3,61 @@ title: "Defining Endpoints"
 description: "Learn how to define endpoints using IEndpoint with different request and response types."
 ---
 
+## The `IEndpoint` Interface
+
+The `IEndpoint` interface is the core of AxisEndpoints. By implementing it, each endpoint keeps routing, metadata, and request handling in a single class.
+
+### Two variants
+
+There are two variants depending on whether the endpoint accepts request parameters:
+
+```csharp
+// Endpoint with request parameters
+public interface IEndpoint<TRequest, TResult>
+{
+    void Configure(IEndpointConfiguration config);
+    Task<TResult> HandleAsync(TRequest request, CancellationToken cancel);
+}
+
+// Endpoint without request parameters
+public interface IEndpoint<TResult>
+{
+    void Configure(IEndpointConfiguration config);
+    Task<TResult> HandleAsync(CancellationToken cancel);
+}
+```
+
+### Two responsibilities
+
+- **`Configure()`**: Declares routing (HTTP method and path), OpenAPI metadata (tags and summary), authorization policies, and filters
+- **`HandleAsync()`**: Processes the request and returns the response
+
+### `TResult` types
+
+`TResult` is typically one of the following:
+
+- **`Response<TBody>`**: A JSON response. The 200 response schema is registered in OpenAPI automatically
+- **`IResult`**: A custom response. Use this for multiple response shapes or non-JSON responses such as CSV export
+
+### Constructor injection
+
+Endpoint classes are resolved from the DI container, so you can inject dependencies through the constructor. Assembly scanning in `AddAxisEndpoints()` automatically registers classes that implement `IEndpoint`.
+
+### Supported HTTP methods
+
+`IEndpointConfiguration` supports the following six HTTP methods:
+
+| Method | Configuration method |
+| --- | --- |
+| GET | `config.Get(route)` |
+| POST | `config.Post(route)` |
+| PUT | `config.Put(route)` |
+| PATCH | `config.Patch(route)` |
+| DELETE | `config.Delete(route)` |
+| HEAD | `config.Head(route)` |
+
+---
+
 ## JSON response — `Response<TBody>`
 
 Use `IEndpoint<TRequest, Response<TBody>>` for POST, PUT, and PATCH endpoints where `TRequest` is bound from the JSON request body.

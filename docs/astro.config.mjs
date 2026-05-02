@@ -4,10 +4,12 @@ import starlight from "@astrojs/starlight";
 import starlightThemeNord from "starlight-theme-nord";
 import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
+import mermaid from "astro-mermaid";
 
 // https://astro.build/config
 export default defineConfig({
   integrations: [
+    mermaid(),
     starlight({
       title: "AxisEndpoints",
       social: [
@@ -28,6 +30,7 @@ export default defineConfig({
         {
           label: "Guides",
           items: [
+            { label: "Core Primitives", slug: "guides/core-primitives" },
             { label: "Defining Endpoints", slug: "guides/defining-endpoints" },
             { label: "Request Binding", slug: "guides/request-binding" },
             { label: "Response Types", slug: "guides/response-types" },
@@ -47,6 +50,12 @@ export default defineConfig({
             { label: "CSV Export", slug: "extensions/csv-helper/csv-export" },
             { label: "Row Validation", slug: "extensions/csv-helper/row-validation" },
             { label: "Class Map", slug: "extensions/csv-helper/class-map" },
+          ],
+        },
+        {
+          label: "FAQ",
+          items: [
+            { label: "FAQ", slug: "faq" },
           ],
         },
       ],

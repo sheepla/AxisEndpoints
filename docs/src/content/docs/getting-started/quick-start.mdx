@@ -3,69 +3,97 @@ title: "Quick Start"
 description: "Set up AxisEndpoints in your ASP.NET Core project and create your first endpoint."
 ---
 
-## Setup in Program.cs
+import { Steps } from '@astrojs/starlight/components';
 
-Call `AddAxisEndpoints()` on the service collection and `MapAxisEndpoints()` on the application. Both methods scan the entry assembly automatically. Pass an `Assembly` argument to target a specific project.
+<Steps>
+1. **Create a project**
 
-```csharp
-using AxisEndpoints.Extensions;
+   ```sh
+   dotnet new webapi -n MyApi
+   cd MyApi
+   ```
 
-var builder = WebApplication.CreateBuilder(args);
+2. **Install AxisEndpoints**
 
-builder.Services.AddOpenApi();
-builder.Services.AddAxisEndpoints(); // Discovers and registers all endpoints
+   ```sh
+   dotnet add package AxisEndpoints
+   ```
 
-var app = builder.Build();
+3. **Set up Program.cs**
 
-app.MapOpenApi();
-app.MapAxisEndpoints(); // Maps all discovered endpoints to the Minimal API pipeline
+   Update `Program.cs` as shown below. `AddAxisEndpoints()` scans the entry assembly and automatically registers every class that implements the `IEndpoint` interface in the DI container. `MapAxisEndpoints()` maps the registered endpoints to the Minimal API pipeline.
 
-app.Run();
-```
+   Filter classes that implement `IEndpointFilter` are also registered automatically through assembly scanning.
 
-## Your first endpoint
+   ```csharp
+   using AxisEndpoints.Extensions;
 
-Here is a complete example of a POST endpoint that creates a user and returns a JSON response:
+   var builder = WebApplication.CreateBuilder(args);
 
-```csharp
-public class CreateUserRequest
-{
-    public required string Name { get; init; }
-    public required string Email { get; init; }
-}
+   builder.Services.AddOpenApi();
+   builder.Services.AddAxisEndpoints();
 
-public class CreateUserResponse
-{
-    public required int Id { get; init; }
-}
+   var app = builder.Build();
 
-public class CreateUserEndpoint : IEndpoint<CreateUserRequest, Response<CreateUserResponse>>
-{
-    private readonly IUserRepository _repository;
+   app.MapOpenApi();
+   app.MapAxisEndpoints();
 
-    public CreateUserEndpoint(IUserRepository repository) => _repository = repository;
+   app.Run();
+   ```
 
-    public void Configure(IEndpointConfiguration config)
-    {
-        config.Post("/users")
-            .Tags("Users")
-            .Summary("Create a new user");
-    }
+4. **Create your first endpoint**
 
-    public async Task<Response<CreateUserResponse>> HandleAsync(
-        CreateUserRequest request,
-        CancellationToken cancel)
-    {
-        var id = await _repository.CreateAsync(request.Name, request.Email, cancel);
+   Here is an example of a POST endpoint that creates a user and returns a JSON response:
 
-        return new Response<CreateUserResponse>
-        {
-            StatusCode = HttpStatusCode.Created,
-            Headers    = [("Location", $"/users/{id}")],
-            Body       = new CreateUserResponse { Id = id },
-        };
-    }
-}
-```
+   ```csharp
+   public class CreateUserRequest
+   {
+       public required string Name { get; init; }
+       public required string Email { get; init; }
+   }
+
+   public class CreateUserResponse
+   {
+       public required int Id { get; init; }
+   }
+
+   public class CreateUserEndpoint : IEndpoint<CreateUserRequest, Response<CreateUserResponse>>
+   {
+       private readonly IUserRepository _repository;
+
+       public CreateUserEndpoint(IUserRepository repository) => _repository = repository;
+
+       public void Configure(IEndpointConfiguration config)
+       {
+           config.Post("/users")
+               .Tags("Users")
+               .Summary("Create a new user");
+       }
+
+       public async Task<Response<CreateUserResponse>> HandleAsync(
+           CreateUserRequest request,
+           CancellationToken cancel)
+       {
+           var id = await _repository.CreateAsync(request.Name, request.Email, cancel);
+
+           return new Response<CreateUserResponse>
+           {
+               StatusCode = HttpStatusCode.Created,
+               Headers    = [("Location", $"/users/{id}")],
+               Body       = new CreateUserResponse { Id = id },
+           };
+       }
+   }
+   ```
+
+5. **Run and verify**
+
+   ```sh
+   dotnet run
+   ```
+
+   Send a POST request to `http://localhost:5000/users` to verify that the endpoint works.
+
+</Steps>
 
 For more details on defining endpoints, see the [Defining Endpoints](/guides/defining-endpoints/) guide.
