@@ -1,6 +1,3 @@
-using AxisEndpoints;
-using AxisEndpoints.Example.Features.Admin;
-
 namespace AxisEndpoints.Example.Features.Admin.Stats;
 
 public class StatsResponse

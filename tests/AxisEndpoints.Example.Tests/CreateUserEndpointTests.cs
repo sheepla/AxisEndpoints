@@ -17,12 +17,15 @@ public class CreateUserEndpointTests : IClassFixture<ExampleWebApplicationFactor
     [Fact]
     public async Task CreateUser_ValidRequest_Returns201WithLocationHeader()
     {
-        var response = await _client.PostAsJsonAsync("/api/users", new
-        {
-            Name = "Eve",
-            Email = "eve@example.com",
-            Role = "User",
-        });
+        var response = await _client.PostAsJsonAsync(
+            "/api/users",
+            new
+            {
+                Name = "Eve",
+                Email = "eve@example.com",
+                Role = "User",
+            }
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.Should().NotBeNull();
@@ -38,11 +41,10 @@ public class CreateUserEndpointTests : IClassFixture<ExampleWebApplicationFactor
     [Fact]
     public async Task CreateUser_DefaultRole_ReturnsUser()
     {
-        var response = await _client.PostAsJsonAsync("/api/users", new
-        {
-            Name = "Frank",
-            Email = "frank@example.com",
-        });
+        var response = await _client.PostAsJsonAsync(
+            "/api/users",
+            new { Name = "Frank", Email = "frank@example.com" }
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var body = await response.Content.ReadFromJsonAsync<UserResponse>();
@@ -53,11 +55,10 @@ public class CreateUserEndpointTests : IClassFixture<ExampleWebApplicationFactor
     [Fact]
     public async Task CreateUser_InvalidEmail_Returns400()
     {
-        var response = await _client.PostAsJsonAsync("/api/users", new
-        {
-            Name = "Eve",
-            Email = "not-an-email",
-        });
+        var response = await _client.PostAsJsonAsync(
+            "/api/users",
+            new { Name = "Eve", Email = "not-an-email" }
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -65,11 +66,10 @@ public class CreateUserEndpointTests : IClassFixture<ExampleWebApplicationFactor
     [Fact]
     public async Task CreateUser_NameTooLong_Returns400()
     {
-        var response = await _client.PostAsJsonAsync("/api/users", new
-        {
-            Name = new string('A', 101),
-            Email = "toolong@example.com",
-        });
+        var response = await _client.PostAsJsonAsync(
+            "/api/users",
+            new { Name = new string('A', 101), Email = "toolong@example.com" }
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -77,10 +77,10 @@ public class CreateUserEndpointTests : IClassFixture<ExampleWebApplicationFactor
     [Fact]
     public async Task CreateUser_MissingName_Returns400()
     {
-        var response = await _client.PostAsJsonAsync("/api/users", new
-        {
-            Email = "missing@example.com",
-        });
+        var response = await _client.PostAsJsonAsync(
+            "/api/users",
+            new { Email = "missing@example.com" }
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }

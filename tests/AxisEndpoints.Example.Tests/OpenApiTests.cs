@@ -1,7 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
-using FluentAssertions;
 using AxisEndpoints.Example.Features.Health;
+using FluentAssertions;
 
 namespace AxisEndpoints.Example.Tests;
 
@@ -21,15 +21,36 @@ public class OpenApiTests : IClassFixture<ExampleWebApplicationFactory>
 
         document.Should().NotBeNull();
 
-        var schema = document!["paths"]?["/health"]?["get"]?["responses"]?["200"]?["content"]?["application/json"]?["schema"];
+        var schema = document!["paths"]
+            ?["/health"]
+            ?["get"]
+            ?["responses"]
+            ?["200"]
+            ?["content"]
+            ?["application/json"]
+            ?["schema"];
         schema.Should().NotBeNull();
         schema!["$ref"]!.GetValue<string>().Should().Be("#/components/schemas/HealthResponse");
 
         document["components"]?["schemas"]?["ResponseOfHealthResponse"].Should().BeNull();
 
         var createdSchema =
-            document["paths"]?["/api/users"]?["post"]?["responses"]?["201"]?["content"]?["application/json"]?["schema"]
-            ?? document["paths"]?["/api/users/"]?["post"]?["responses"]?["201"]?["content"]?["application/json"]?["schema"];
+            document["paths"]
+                ?["/api/users"]
+                ?["post"]
+                ?["responses"]
+                ?["201"]
+                ?["content"]
+                ?["application/json"]
+                ?["schema"]
+            ?? document["paths"]
+                ?["/api/users/"]
+                ?["post"]
+                ?["responses"]
+                ?["201"]
+                ?["content"]
+                ?["application/json"]
+                ?["schema"];
         createdSchema.Should().NotBeNull();
         createdSchema!["$ref"]!.GetValue<string>().Should().Be("#/components/schemas/UserResponse");
     }

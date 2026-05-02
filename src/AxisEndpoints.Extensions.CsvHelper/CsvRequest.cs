@@ -145,11 +145,7 @@ public abstract class CsvRequest<TRow> : ICsvBindingErrors
     /// Validates a single row using DataAnnotations and appends any errors to the
     /// <paramref name="errors"/> dictionary keyed by <c>"row {rowNumber}: {memberName}"</c>.
     /// </summary>
-    private static void ValidateRow(
-        TRow row,
-        int rowNumber,
-        Dictionary<string, string[]> errors
-    )
+    private static void ValidateRow(TRow row, int rowNumber, Dictionary<string, string[]> errors)
     {
         if (row is null)
         {
@@ -171,7 +167,7 @@ public abstract class CsvRequest<TRow> : ICsvBindingErrors
             var message = result.ErrorMessage ?? "Validation failed.";
             if (errors.TryGetValue(key, out var existing))
             {
-                errors[key] = [..existing, message];
+                errors[key] = [.. existing, message];
             }
             else
             {

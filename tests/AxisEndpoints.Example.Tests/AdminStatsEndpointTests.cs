@@ -29,7 +29,9 @@ public class AdminStatsEndpointTests : IClassFixture<ExampleWebApplicationFactor
     [Fact]
     public async Task GetStats_WithDateRange_Returns200WithCorrectDates()
     {
-        var response = await _client.GetAsync("/admin/stats?from=2025-01-01T00:00:00Z&to=2025-12-31T00:00:00Z");
+        var response = await _client.GetAsync(
+            "/admin/stats?from=2025-01-01T00:00:00Z&to=2025-12-31T00:00:00Z"
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<StatsResponse>();

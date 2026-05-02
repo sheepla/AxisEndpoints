@@ -37,7 +37,9 @@ public class UpdateUserEndpointTests : IClassFixture<ExampleWebApplicationFactor
     public async Task UpdateUser_WithAvatar_IncludesAvatarInfoInName()
     {
         var avatarContent = new ByteArrayContent([0x89, 0x50, 0x4E, 0x47]);
-        avatarContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+        avatarContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+            "image/png"
+        );
 
         var form = new MultipartFormDataContent
         {

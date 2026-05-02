@@ -1,5 +1,4 @@
 using System.Net;
-using AxisEndpoints;
 using AxisEndpoints.Example.Filters;
 
 namespace AxisEndpoints.Example.Features.Users.Create;

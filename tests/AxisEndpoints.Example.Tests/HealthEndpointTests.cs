@@ -24,7 +24,7 @@ public class HealthEndpointTests : IClassFixture<ExampleWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<HealthResponse>();
         body.Should().NotBeNull();
-        body!.Status.Should().Be("ok");
+        body.Status.Should().Be("ok");
         body.Timestamp.Should().BeOnOrAfter(before.AddSeconds(-1));
         body.Timestamp.Should().BeOnOrBefore(after.AddSeconds(1));
     }

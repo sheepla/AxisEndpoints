@@ -13,7 +13,9 @@ public class HelloEndpoint : IEndpoint<Response<HelloResponse>>
 
     public Task<Response<HelloResponse>> HandleAsync(CancellationToken cancel)
     {
-        return Task.FromResult(new Response<HelloResponse> { Body = new HelloResponse("Hello, World!") });
+        return Task.FromResult(
+            new Response<HelloResponse> { Body = new HelloResponse("Hello, World!") }
+        );
     }
 }
 
@@ -28,11 +30,14 @@ public class EchoEndpoint : IEndpoint<EchoRequest, Response<EchoResponse>>
 
     public Task<Response<EchoResponse>> HandleAsync(EchoRequest request, CancellationToken cancel)
     {
-        return Task.FromResult(new Response<EchoResponse> { Body = new EchoResponse(request.Message) });
+        return Task.FromResult(
+            new Response<EchoResponse> { Body = new EchoResponse(request.Message) }
+        );
     }
 }
 
 public record EchoRequest(string Message);
+
 public record EchoResponse(string Echo);
 
 public class ValidatedEndpoint : IEndpoint<ValidatedRequest, Response<EmptyResponse>>
@@ -42,7 +47,10 @@ public class ValidatedEndpoint : IEndpoint<ValidatedRequest, Response<EmptyRespo
         config.Post("/validated");
     }
 
-    public Task<Response<EmptyResponse>> HandleAsync(ValidatedRequest request, CancellationToken cancel)
+    public Task<Response<EmptyResponse>> HandleAsync(
+        ValidatedRequest request,
+        CancellationToken cancel
+    )
     {
         return Task.FromResult(Response.Empty);
     }
@@ -62,7 +70,10 @@ public class DeleteItemEndpoint : IEndpoint<DeleteItemRequest, Response<EmptyRes
         config.Delete("/items/{id}").ProducesSuccess<EmptyResponse>(HttpStatusCode.NoContent);
     }
 
-    public Task<Response<EmptyResponse>> HandleAsync(DeleteItemRequest request, CancellationToken cancel)
+    public Task<Response<EmptyResponse>> HandleAsync(
+        DeleteItemRequest request,
+        CancellationToken cancel
+    )
     {
         return Task.FromResult(Response.NoContent);
     }
@@ -83,7 +94,7 @@ public class CreatedHelloEndpoint : IEndpoint<Response<HelloResponse>>
             new Response<HelloResponse>
             {
                 StatusCode = HttpStatusCode.Created,
-                Body = new HelloResponse("Created!")
+                Body = new HelloResponse("Created!"),
             }
         );
     }
@@ -106,6 +117,8 @@ public class GroupedEndpoint : IEndpoint<Response<HelloResponse>>
 
     public Task<Response<HelloResponse>> HandleAsync(CancellationToken cancel)
     {
-        return Task.FromResult(new Response<HelloResponse> { Body = new HelloResponse("Grouped!") });
+        return Task.FromResult(
+            new Response<HelloResponse> { Body = new HelloResponse("Grouped!") }
+        );
     }
 }

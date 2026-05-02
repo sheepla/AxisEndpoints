@@ -22,7 +22,7 @@ public class EndpointIntegrationTests : IClassFixture<TestWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<HelloResponse>();
         body.Should().NotBeNull();
-        body!.Message.Should().Be("Hello, World!");
+        body.Message.Should().Be("Hello, World!");
     }
 
     [Fact]
@@ -33,7 +33,7 @@ public class EndpointIntegrationTests : IClassFixture<TestWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<EchoResponse>();
         body.Should().NotBeNull();
-        body!.Echo.Should().Be("test");
+        body.Echo.Should().Be("test");
     }
 
     [Fact]
@@ -68,7 +68,7 @@ public class EndpointIntegrationTests : IClassFixture<TestWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<HelloResponse>();
         body.Should().NotBeNull();
-        body!.Message.Should().Be("Grouped!");
+        body.Message.Should().Be("Grouped!");
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class EndpointIntegrationTests : IClassFixture<TestWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var body = await response.Content.ReadFromJsonAsync<HelloResponse>();
         body.Should().NotBeNull();
-        body!.Message.Should().Be("Created!");
+        body.Message.Should().Be("Created!");
     }
 
     [Fact]
@@ -89,15 +89,29 @@ public class EndpointIntegrationTests : IClassFixture<TestWebApplicationFactory>
 
         document.Should().NotBeNull();
 
-        var schema = document!["paths"]?["/hello"]?["get"]?["responses"]?["200"]?["content"]?["application/json"]?["schema"];
+        var schema = document["paths"]
+            ?["/hello"]
+            ?["get"]
+            ?["responses"]
+            ?["200"]
+            ?["content"]
+            ?["application/json"]
+            ?["schema"];
         schema.Should().NotBeNull();
-        schema!["$ref"]!.GetValue<string>().Should().Be("#/components/schemas/HelloResponse");
+        schema["$ref"]!.GetValue<string>().Should().Be("#/components/schemas/HelloResponse");
 
         document["components"]?["schemas"]?["ResponseOfHelloResponse"].Should().BeNull();
 
-        var createdSchema = document["paths"]?["/hello-created"]?["post"]?["responses"]?["201"]?["content"]?["application/json"]?["schema"];
+        var createdSchema = document["paths"]
+            ?["/hello-created"]
+            ?["post"]
+            ?["responses"]
+            ?["201"]
+            ?["content"]
+            ?["application/json"]
+            ?["schema"];
         createdSchema.Should().NotBeNull();
-        createdSchema!["$ref"]!.GetValue<string>().Should().Be("#/components/schemas/HelloResponse");
+        createdSchema["$ref"]!.GetValue<string>().Should().Be("#/components/schemas/HelloResponse");
     }
 
     [Fact]
@@ -107,14 +121,14 @@ public class EndpointIntegrationTests : IClassFixture<TestWebApplicationFactory>
 
         document.Should().NotBeNull();
 
-        var responses = document!["paths"]?["/items/{id}"]?["delete"]?["responses"]?.AsObject();
+        var responses = document["paths"]?["/items/{id}"]?["delete"]?["responses"]?.AsObject();
         responses.Should().NotBeNull();
 
-        responses!.ContainsKey("200").Should().BeFalse();
+        responses.ContainsKey("200").Should().BeFalse();
 
         var successResponse = responses["204"];
         successResponse.Should().NotBeNull();
-        successResponse!["content"]?["application/json"]?["schema"].Should().BeNull();
+        successResponse["content"]?["application/json"]?["schema"].Should().BeNull();
 
         document["components"]?["schemas"]?["ResponseOfEmptyResponse"].Should().BeNull();
         document["components"]?["schemas"]?["EmptyResponse"].Should().BeNull();

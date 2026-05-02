@@ -1,5 +1,3 @@
-using AxisEndpoints;
-
 namespace AxisEndpoints.Example.Features.Users.Update;
 
 /// <summary>
