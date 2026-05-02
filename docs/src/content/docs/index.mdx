@@ -14,38 +14,50 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid } from "@astrojs/starlight/components";
 
 ## About
 
 **AxisEndpoints** is a DSL for implementing the Request-Endpoint-Response (REPR) pattern in ASP.NET Core. It consolidates each API endpoint into a self-contained class with a clear, explicit programming interface.
 
 ```csharp
-public class CreateUserEndpoint : IEndpoint<CreateUserRequest, Response<CreateUserResponse>>
+using AxisEndpoints;
+
+namespace AxisEndpoints.Tutorial.Features.Hello;
+
+public record HelloRequest
 {
-    private readonly IUserRepository _repository;
+    public required string Name { get; set; } = string.Empty;
+}
 
-    public CreateUserEndpoint(IUserRepository repository) => _repository = repository;
+public record HelloResponse
+{
+    public required string Message { get; set; } = string.Empty;
+}
 
+public class HelloEndpoint(ILogger<HelloEndpoint> logger)
+    : IEndpoint<HelloRequest, Response<HelloResponse>>
+{
     public void Configure(IEndpointConfiguration config)
     {
-        config.Post("/users")
-            .Tags("Users")
-            .Summary("Create a new user");
+        config
+            .Get("/hello")
+            .Summary("Hello")
+            .Description("This endpoint takes a name as input and returns a greeting message.");
     }
 
-    public async Task<Response<CreateUserResponse>> HandleAsync(
-        CreateUserRequest request,
+    public Task<Response<HelloResponse>> HandleAsync(
+        HelloRequest request,
         CancellationToken cancel)
     {
-        var id = await _repository.CreateAsync(request.Name, request.Email, cancel);
+        logger.LogInformation("Received request to /hello with name: {Name}", request.Name);
 
-        return new Response<CreateUserResponse>
-        {
-            StatusCode = HttpStatusCode.Created,
-            Headers    = [("Location", $"/users/{id}")],
-            Body       = new CreateUserResponse { Id = id },
-        };
+        return Task.FromResult(
+            new Response<HelloResponse>
+            {
+                Body = new HelloResponse { Message = $"Hello, {request.Name}!" },
+            }
+        );
     }
 }
 ```
@@ -65,7 +77,7 @@ ASP.NET Core offers three approaches to building Web APIs. Each involves differe
 |                     | Minimal API                                   | Controller                                  | REPR Pattern (AxisEndpoints)                   |
 | ------------------- | --------------------------------------------- | ------------------------------------------- | ---------------------------------------------- |
 | **Structure**       | Functions registered inline                   | Methods grouped in a class                  | One class per endpoint                         |
-| **Scalability**     | ⚠ Can become hard to manage as endpoints grow | ⚠ Controllers can grow bloated over time    | ✅ Each endpoint stays self-contained           |
+| **Scalability**     | ⚠ Can become hard to manage as endpoints grow | ⚠ Controllers can grow bloated over time    | ✅ Each endpoint stays self-contained          |
 | **Coupling**        | Low — but no enforced structure               | Medium — CRUD operations share a controller | Low — slices are independent by design         |
 | **Learning curve**  | Low                                           | Medium (MVC conventions)                    | Medium (built on Minimal API)                  |
 | **Best suited for** | Small services, prototypes                    | CRUD-heavy APIs familiar to MVC developers  | Feature-rich APIs, Vertical Slice Architecture |
@@ -82,16 +94,20 @@ To implement the REPR pattern in ASP.NET Core, you can either write a thin wrapp
 ## Next steps
 
 <CardGrid>
-	<Card title="Installation" icon="setting">
-		Get AxisEndpoints installed in your project. See the [Installation guide](/getting-started/installation/).
-	</Card>
-	<Card title="Guides" icon="open-book">
-		Learn how to define endpoints, bind requests, handle responses, and more. See the [Guides](/guides/defining-endpoints/).
-	</Card>
-	<Card title="CSV Extension" icon="document">
-		Add typed CSV import and export to your endpoints with the optional CsvHelper extension. See the [CSV Helper extension](/extensions/csv-helper/).
-	</Card>
-	<Card title="FAQ" icon="comment">
-		Find answers to common questions in the [FAQ](/faq/).
-	</Card>
+  <Card title="Installation" icon="setting">
+    Get AxisEndpoints installed in your project. See the [Installation
+    guide](/getting-started/installation/).
+  </Card>
+  <Card title="Guides" icon="open-book">
+    Learn how to define endpoints, bind requests, handle responses, and more.
+    See the [Guides](/guides/defining-endpoints/).
+  </Card>
+  <Card title="CSV Extension" icon="document">
+    Add typed CSV import and export to your endpoints with the optional
+    CsvHelper extension. See the [CSV Helper
+    extension](/extensions/csv-helper/).
+  </Card>
+  <Card title="FAQ" icon="comment">
+    Find answers to common questions in the [FAQ](/faq/).
+  </Card>
 </CardGrid>
