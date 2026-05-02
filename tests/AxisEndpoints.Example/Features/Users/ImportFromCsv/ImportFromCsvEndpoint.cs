@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Net;
 using AxisEndpoints.Extensions.CsvHelper;
 using CsvHelper.Configuration.Attributes;
 
@@ -50,7 +51,8 @@ public sealed class ImportFromCsvEndpoint : IEndpoint<ImportFromCsvRequest, Resp
             .Description(
                 "Accepts a CSV file with columns: name, email, role. "
                     + "Validates each row and returns a ValidationProblem on failure."
-            );
+            )
+            .ProducesSuccess<EmptyResponse>(HttpStatusCode.NoContent);
     }
 
     public Task<Response<EmptyResponse>> HandleAsync(

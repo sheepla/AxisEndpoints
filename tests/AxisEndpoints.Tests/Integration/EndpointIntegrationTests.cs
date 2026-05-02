@@ -72,6 +72,17 @@ public class EndpointIntegrationTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task PostCreatedHello_Returns201WithMessage()
+    {
+        var response = await _client.PostAsync("/hello-created", content: null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.Content.ReadFromJsonAsync<HelloResponse>();
+        body.Should().NotBeNull();
+        body!.Message.Should().Be("Created!");
+    }
+
+    [Fact]
     public async Task OpenApi_UsesResponseBodyTypeInsteadOfResponseWrapper()
     {
         var document = await _client.GetFromJsonAsync<JsonObject>("/openapi/v1.json");
@@ -83,6 +94,10 @@ public class EndpointIntegrationTests : IClassFixture<TestWebApplicationFactory>
         schema!["$ref"]!.GetValue<string>().Should().Be("#/components/schemas/HelloResponse");
 
         document["components"]?["schemas"]?["ResponseOfHelloResponse"].Should().BeNull();
+
+        var createdSchema = document["paths"]?["/hello-created"]?["post"]?["responses"]?["201"]?["content"]?["application/json"]?["schema"];
+        createdSchema.Should().NotBeNull();
+        createdSchema!["$ref"]!.GetValue<string>().Should().Be("#/components/schemas/HelloResponse");
     }
 
     [Fact]
@@ -95,7 +110,9 @@ public class EndpointIntegrationTests : IClassFixture<TestWebApplicationFactory>
         var responses = document!["paths"]?["/items/{id}"]?["delete"]?["responses"]?.AsObject();
         responses.Should().NotBeNull();
 
-        var successResponse = responses!["200"] ?? responses["204"];
+        responses!.ContainsKey("200").Should().BeFalse();
+
+        var successResponse = responses["204"];
         successResponse.Should().NotBeNull();
         successResponse!["content"]?["application/json"]?["schema"].Should().BeNull();
 

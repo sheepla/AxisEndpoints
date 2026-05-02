@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AxisEndpoints.Tests.Integration;
@@ -58,7 +59,7 @@ public class DeleteItemEndpoint : IEndpoint<DeleteItemRequest, Response<EmptyRes
 {
     public void Configure(IEndpointConfiguration config)
     {
-        config.Delete("/items/{id}");
+        config.Delete("/items/{id}").ProducesSuccess<EmptyResponse>(HttpStatusCode.NoContent);
     }
 
     public Task<Response<EmptyResponse>> HandleAsync(DeleteItemRequest request, CancellationToken cancel)
@@ -68,6 +69,25 @@ public class DeleteItemEndpoint : IEndpoint<DeleteItemRequest, Response<EmptyRes
 }
 
 public record DeleteItemRequest([property: FromRoute] int Id);
+
+public class CreatedHelloEndpoint : IEndpoint<Response<HelloResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Post("/hello-created").ProducesSuccess<HelloResponse>(HttpStatusCode.Created);
+    }
+
+    public Task<Response<HelloResponse>> HandleAsync(CancellationToken cancel)
+    {
+        return Task.FromResult(
+            new Response<HelloResponse>
+            {
+                StatusCode = HttpStatusCode.Created,
+                Body = new HelloResponse("Created!")
+            }
+        );
+    }
+}
 
 public class ApiGroup : IEndpointGroup
 {

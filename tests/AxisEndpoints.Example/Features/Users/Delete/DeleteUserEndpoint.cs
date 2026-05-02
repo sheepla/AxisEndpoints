@@ -1,4 +1,5 @@
 using AxisEndpoints;
+using System.Net;
 
 namespace AxisEndpoints.Example.Features.Users.Delete;
 
@@ -21,6 +22,7 @@ public class DeleteUserEndpoint : IEndpoint<DeleteUserRequest, Response<EmptyRes
                 "Permanently removes a user. "
                     + "In a real application, restrict this to the Admin role via .RequireAuthorization(\"Admin\")."
             )
+            .ProducesSuccess<EmptyResponse>(HttpStatusCode.NoContent)
             .AllowAnonymous();
     }
 
