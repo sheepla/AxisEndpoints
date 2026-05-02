@@ -20,6 +20,14 @@
 
 </div>
 
+
+<div align="center">
+
+![CI Status](https://github.com/sheepla/AxisEndpoints/actions/workflows/ci.yml/badge.svg) ![Publish Status](https://github.com/sheepla/AxisEndpoints/actions/workflows/publish.yml/badge.svg)
+![Docs Status](https://github.com/sheepla/AxisEndpoints/actions/workflows/docs.yml/badge.svg)
+
+</div>
+
 ## About
 
 **AxisEndpoints** is a DSL for implementing the Request-Endpoint-Response (REPR) pattern in ASP.NET Core. It consolidates each API endpoint into a self-contained class with a clear, explicit programming interface.
