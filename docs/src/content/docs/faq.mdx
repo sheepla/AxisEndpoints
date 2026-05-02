@@ -1,0 +1,39 @@
+---
+title: "FAQ"
+description: "Answers to frequently asked questions about AxisEndpoints."
+---
+
+## Why did you build AxisEndpoints?
+
+I built AxisEndpoints because I could not find a library for implementing the REPR (Request-Endpoint-Response) pattern in ASP.NET Core that offered explicit Minimal API-based interfaces, strong type safety, and an OpenAPI-first design.
+
+Existing libraries such as [FastEndpoints](https://fast-endpoints.com/) are powerful, but they introduce many custom abstractions that diverge from standard ASP.NET Core conventions and can increase the learning curve. AxisEndpoints aims to stay close to the standard API surface so existing Minimal API knowledge carries over directly.
+
+## Do I really need the REPR pattern?
+
+It depends on the size and nature of your project. For small APIs, Minimal APIs may be enough. If your application is mostly CRUD, Controllers are also a strong option. Each approach has trade-offs.
+
+- **Minimal APIs** become harder to manage as the number of endpoints grows
+- **Controllers** tend to accumulate too much responsibility in a single class
+
+The REPR pattern keeps each endpoint self-contained, which reduces coupling between features and scales more predictably. It is especially useful when you adopt Vertical Slice Architecture.
+
+Choose the approach that fits your project. You can also refer to the comparison table on the top page: [Why REPR?](/)
+
+## Why is my response type missing from OpenAPI?
+
+If `HandleAsync` returns `IResult`, the framework cannot infer the response type automatically. Declare it explicitly in `Configure()` with `.ProducesSuccess<TBody>()` and `.ProducesError(HttpStatusCode)`.
+
+```csharp
+public void Configure(IEndpointConfiguration config)
+{
+    config
+        .Get("/users/{id}")
+        .ProducesSuccess<UserResponse>()
+        .ProducesError(HttpStatusCode.NotFound);
+}
+```
+
+If you return `Response<TBody>`, the 200 response schema is registered automatically, so these calls are not needed.
+
+See the [Error Responses](/guides/error-responses/) guide for details.

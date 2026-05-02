@@ -3,7 +3,42 @@ title: "Endpoint Groups"
 description: "Group multiple endpoints to share prefixes, tags, authorization, and filters."
 ---
 
-Implement `IEndpointGroup` and reference it with `config.Group<TGroup>()`. All endpoints in the group share the prefix, tags, authorization policy, and filters defined on the group.
+## What Is an Endpoint Group?
+
+An Endpoint Group is a mechanism for letting multiple endpoints share a common route prefix, tags, authorization policies, and filters. It corresponds to ASP.NET Core Minimal API's `MapGroup()`, and AxisEndpoints exposes it declaratively through the `IEndpointGroup` interface.
+
+Using groups provides several benefits:
+
+- **DRY**: Shared route prefixes and tags are defined in one place instead of repeated on every endpoint
+- **Consistent authorization**: Authorization policies defined on the group are applied automatically to all endpoints in the group
+- **Consistent OpenAPI tags**: Group-level tags keep related endpoints organized together in the OpenAPI document
+
+## The `IEndpointGroup` Interface
+
+```csharp
+public interface IEndpointGroup
+{
+    void Configure(IEndpointGroupConfiguration config);
+}
+```
+
+Use `IEndpointGroupConfiguration` inside `Configure()` to declare shared settings.
+
+## Available `IEndpointGroupConfiguration` Settings
+
+| Method | Description |
+| --- | --- |
+| `Prefix(string prefix)` | Sets a shared route prefix for every endpoint in the group |
+| `Tags(params string[] tags)` | Sets OpenAPI tags |
+| `AllowAnonymous()` | Allows access without authentication |
+| `RequireAuthorization(params string[] roles)` | Restricts access to users who have any of the specified roles |
+| `RequireAuthorization(string policy)` | Applies a named authorization policy |
+| `RequireAuthorization(Action<AuthorizationPolicyBuilder> build)` | Applies an authorization policy built dynamically |
+| `AddFilter<TFilter>()` | Applies a filter to every endpoint in the group |
+
+## Basic Usage
+
+Implement `IEndpointGroup`, then reference it from an endpoint's `Configure` method with `config.Group<TGroup>()`. The group's prefix, tags, authorization policies, and filters are shared by every endpoint that references it.
 
 ```csharp
 public class UsersGroup : IEndpointGroup
@@ -12,7 +47,7 @@ public class UsersGroup : IEndpointGroup
     {
         config.Prefix("/api/users")
             .Tags("Users")
-            .RequireAuthorization();
+            .RequireAuthorization("CanManageUsers");
     }
 }
 
@@ -24,6 +59,39 @@ public class GetUsersEndpoint : IEndpoint<Response<GetUsersResponse>>
         config.Get("/").Group<UsersGroup>().Summary("Get all users");
     }
     // ...
+}
+```
+
+:::note
+Calling `.RequireAuthorization()` with no arguments passes an empty role array, so authorization is effectively not applied. Always specify either a policy name, such as `RequireAuthorization("CanManageUsers")`, or multiple role names, such as `RequireAuthorization("Admin", "SuperAdmin")`. Passing a single string selects the `string policy` overload, so it is interpreted as a policy name rather than a role.
+:::
+
+## Role-Based Group Authorization
+
+```csharp
+public class AdminGroup : IEndpointGroup
+{
+    public void Configure(IEndpointGroupConfiguration config)
+    {
+        config.Prefix("/api/admin")
+            .Tags("Admin")
+            .RequireAuthorization("Admin", "SuperAdmin");
+    }
+}
+```
+
+## Applying Filters to a Group
+
+Filters registered on a group are applied to every endpoint that belongs to that group.
+
+```csharp
+public class AuditedGroup : IEndpointGroup
+{
+    public void Configure(IEndpointGroupConfiguration config)
+    {
+        config.Prefix("/api/audited")
+            .AddFilter<AuditLogFilter>();
+    }
 }
 ```
 
