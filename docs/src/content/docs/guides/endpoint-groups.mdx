@@ -3,17 +3,17 @@ title: "Endpoint Groups"
 description: "Group multiple endpoints to share prefixes, tags, authorization, and filters."
 ---
 
-## Endpoint Group とは
+## What Is an Endpoint Group?
 
-Endpoint Group は、複数のエンドポイントが共通のルートプレフィックス、タグ、認可ポリシー、フィルタを共有するための仕組みです。ASP.NET Core Minimal API の `MapGroup()` に対応する概念であり、AxisEndpoints ではこれを `IEndpointGroup` インタフェースとして宣言的に定義します。
+An Endpoint Group is a mechanism for letting multiple endpoints share a common route prefix, tags, authorization policies, and filters. It corresponds to ASP.NET Core Minimal API's `MapGroup()`, and AxisEndpoints exposes it declaratively through the `IEndpointGroup` interface.
 
-グループを活用することで、以下のメリットが得られます:
+Using groups provides several benefits:
 
-- **DRY原則**: 共通のルートプレフィックスやタグを一箇所にまとめ、各エンドポイントで繰り返し記述する必要がなくなります
-- **一貫した認可ポリシー**: グループに設定した認可ポリシーがすべてのエンドポイントに自動適用されるため、設定漏れを防ぎます
-- **OpenAPI タグの統一**: グループで設定したタグにより、OpenAPI ドキュメント上でエンドポイントが論理的にまとめられます
+- **DRY**: Shared route prefixes and tags are defined in one place instead of repeated on every endpoint
+- **Consistent authorization**: Authorization policies defined on the group are applied automatically to all endpoints in the group
+- **Consistent OpenAPI tags**: Group-level tags keep related endpoints organized together in the OpenAPI document
 
-## `IEndpointGroup` インタフェース
+## The `IEndpointGroup` Interface
 
 ```csharp
 public interface IEndpointGroup
@@ -22,23 +22,23 @@ public interface IEndpointGroup
 }
 ```
 
-`Configure()` メソッドで `IEndpointGroupConfiguration` を使って共通設定を宣言します。
+Use `IEndpointGroupConfiguration` inside `Configure()` to declare shared settings.
 
-## `IEndpointGroupConfiguration` で設定できる項目
+## Available `IEndpointGroupConfiguration` Settings
 
-| メソッド | 説明 |
+| Method | Description |
 | --- | --- |
-| `Prefix(string prefix)` | グループ内の全エンドポイントに共通のルートプレフィックスを設定 |
-| `Tags(params string[] tags)` | OpenAPI タグを設定 |
-| `AllowAnonymous()` | 認証なしのアクセスを許可 |
-| `RequireAuthorization(params string[] roles)` | 指定したロールのいずれかを持つユーザーに制限 |
-| `RequireAuthorization(string policy)` | 名前付き認可ポリシーを適用 |
-| `RequireAuthorization(Action<AuthorizationPolicyBuilder> build)` | 動的に構築した認可ポリシーを適用 |
-| `AddFilter<TFilter>()` | グループ内の全エンドポイントにフィルタを適用 |
+| `Prefix(string prefix)` | Sets a shared route prefix for every endpoint in the group |
+| `Tags(params string[] tags)` | Sets OpenAPI tags |
+| `AllowAnonymous()` | Allows access without authentication |
+| `RequireAuthorization(params string[] roles)` | Restricts access to users who have any of the specified roles |
+| `RequireAuthorization(string policy)` | Applies a named authorization policy |
+| `RequireAuthorization(Action<AuthorizationPolicyBuilder> build)` | Applies an authorization policy built dynamically |
+| `AddFilter<TFilter>()` | Applies a filter to every endpoint in the group |
 
-## 基本的な使い方
+## Basic Usage
 
-`IEndpointGroup` を実装し、エンドポイントの `Configure` メソッドで `config.Group<TGroup>()` を呼び出して参照します。グループで定義したプレフィックス、タグ、認可ポリシー、フィルタがすべてのエンドポイントに共有されます。
+Implement `IEndpointGroup`, then reference it from an endpoint's `Configure` method with `config.Group<TGroup>()`. The group's prefix, tags, authorization policies, and filters are shared by every endpoint that references it.
 
 ```csharp
 public class UsersGroup : IEndpointGroup
@@ -63,10 +63,10 @@ public class GetUsersEndpoint : IEndpoint<Response<GetUsersResponse>>
 ```
 
 :::note
-`.RequireAuthorization()` を引数なしで呼び出すと空のロール配列が渡されるため、認可は実質的に適用されません。必ずポリシー名（例: `RequireAuthorization("CanManageUsers")`）またはロール名を複数指定（例: `RequireAuthorization("Admin", "SuperAdmin")`）してください。単一の文字列を渡すと `string policy` オーバーロードが優先され、ロールではなくポリシー名として解釈されます。
+Calling `.RequireAuthorization()` with no arguments passes an empty role array, so authorization is effectively not applied. Always specify either a policy name, such as `RequireAuthorization("CanManageUsers")`, or multiple role names, such as `RequireAuthorization("Admin", "SuperAdmin")`. Passing a single string selects the `string policy` overload, so it is interpreted as a policy name rather than a role.
 :::
 
-## ロールベースのグループ認可
+## Role-Based Group Authorization
 
 ```csharp
 public class AdminGroup : IEndpointGroup
@@ -80,9 +80,9 @@ public class AdminGroup : IEndpointGroup
 }
 ```
 
-## グループにフィルタを適用する
+## Applying Filters to a Group
 
-グループに登録したフィルタは、そのグループに属するすべてのエンドポイントに適用されます。
+Filters registered on a group are applied to every endpoint that belongs to that group.
 
 ```csharp
 public class AuditedGroup : IEndpointGroup

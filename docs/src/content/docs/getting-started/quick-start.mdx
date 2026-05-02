@@ -6,24 +6,24 @@ description: "Set up AxisEndpoints in your ASP.NET Core project and create your 
 import { Steps } from '@astrojs/starlight/components';
 
 <Steps>
-1. **プロジェクトを作成する**
+1. **Create a project**
 
    ```sh
    dotnet new webapi -n MyApi
    cd MyApi
    ```
 
-2. **AxisEndpoints をインストールする**
+2. **Install AxisEndpoints**
 
    ```sh
    dotnet add package AxisEndpoints
    ```
 
-3. **Program.cs をセットアップする**
+3. **Set up Program.cs**
 
-   `Program.cs` を以下のように編集します。`AddAxisEndpoints()` はエントリアセンブリをスキャンし、`IEndpoint` インタフェースを実装するすべてのクラスを自動的にDIコンテナに登録します。`MapAxisEndpoints()` は登録されたエンドポイントをMinimal APIパイプラインにマッピングします。
+   Update `Program.cs` as shown below. `AddAxisEndpoints()` scans the entry assembly and automatically registers every class that implements the `IEndpoint` interface in the DI container. `MapAxisEndpoints()` maps the registered endpoints to the Minimal API pipeline.
 
-   `IEndpointFilter` を実装するフィルタクラスも同様に、アセンブリスキャンで自動的にDIコンテナに登録されます。
+   Filter classes that implement `IEndpointFilter` are also registered automatically through assembly scanning.
 
    ```csharp
    using AxisEndpoints.Extensions;
@@ -41,9 +41,9 @@ import { Steps } from '@astrojs/starlight/components';
    app.Run();
    ```
 
-4. **最初のエンドポイントを作成する**
+4. **Create your first endpoint**
 
-   以下は、ユーザーを作成して JSON レスポンスを返す POST エンドポイントの例です:
+   Here is an example of a POST endpoint that creates a user and returns a JSON response:
 
    ```csharp
    public class CreateUserRequest
@@ -86,13 +86,13 @@ import { Steps } from '@astrojs/starlight/components';
    }
    ```
 
-5. **実行して確認する**
+5. **Run and verify**
 
    ```sh
    dotnet run
    ```
 
-   `http://localhost:5000/users` に POST リクエストを送信してエンドポイントが動作することを確認します。
+   Send a POST request to `http://localhost:5000/users` to verify that the endpoint works.
 
 </Steps>
 

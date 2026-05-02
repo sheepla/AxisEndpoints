@@ -3,23 +3,23 @@ title: "Defining Endpoints"
 description: "Learn how to define endpoints using IEndpoint with different request and response types."
 ---
 
-## `IEndpoint` インタフェース
+## The `IEndpoint` Interface
 
-AxisEndpoints の中核は `IEndpoint` インタフェースです。すべてのエンドポイントはこのインタフェースを実装することで、ルーティング・メタデータ・リクエスト処理を1つのクラスに集約します。
+The `IEndpoint` interface is the core of AxisEndpoints. By implementing it, each endpoint keeps routing, metadata, and request handling in a single class.
 
-### 2つのバリアント
+### Two variants
 
-リクエストパラメータの有無に応じて、2つのバリアントが用意されています:
+There are two variants depending on whether the endpoint accepts request parameters:
 
 ```csharp
-// リクエストパラメータを受け取るエンドポイント
+// Endpoint with request parameters
 public interface IEndpoint<TRequest, TResult>
 {
     void Configure(IEndpointConfiguration config);
     Task<TResult> HandleAsync(TRequest request, CancellationToken cancel);
 }
 
-// リクエストパラメータなしのエンドポイント
+// Endpoint without request parameters
 public interface IEndpoint<TResult>
 {
     void Configure(IEndpointConfiguration config);
@@ -27,27 +27,27 @@ public interface IEndpoint<TResult>
 }
 ```
 
-### 2つの責務
+### Two responsibilities
 
-- **`Configure()`**: ルーティング（HTTPメソッドとパス）、OpenAPI メタデータ（タグ、サマリー）、認可ポリシー、フィルタを宣言します
-- **`HandleAsync()`**: リクエストを処理してレスポンスを返します
+- **`Configure()`**: Declares routing (HTTP method and path), OpenAPI metadata (tags and summary), authorization policies, and filters
+- **`HandleAsync()`**: Processes the request and returns the response
 
-### `TResult` の型
+### `TResult` types
 
-`TResult` は以下のいずれかです:
+`TResult` is typically one of the following:
 
-- **`Response<TBody>`** — JSON 応答。200 のスキーマが OpenAPI に自動登録されます
-- **`IResult`** — カスタム応答。複数のレスポンス形状を返す場合や、CSV エクスポートなど JSON 以外の応答に使用します
+- **`Response<TBody>`**: A JSON response. The 200 response schema is registered in OpenAPI automatically
+- **`IResult`**: A custom response. Use this for multiple response shapes or non-JSON responses such as CSV export
 
-### コンストラクタインジェクション
+### Constructor injection
 
-エンドポイントクラスは DI コンテナから解決されるため、コンストラクタインジェクションで依存を受け取れます。`AddAxisEndpoints()` のアセンブリスキャンにより、`IEndpoint` を実装するクラスは自動的に DI コンテナに登録されます。
+Endpoint classes are resolved from the DI container, so you can inject dependencies through the constructor. Assembly scanning in `AddAxisEndpoints()` automatically registers classes that implement `IEndpoint`.
 
-### サポートされる HTTP メソッド
+### Supported HTTP methods
 
-`IEndpointConfiguration` では以下の6つの HTTP メソッドがサポートされています:
+`IEndpointConfiguration` supports the following six HTTP methods:
 
-| メソッド | 設定メソッド |
+| Method | Configuration method |
 | --- | --- |
 | GET | `config.Get(route)` |
 | POST | `config.Post(route)` |
