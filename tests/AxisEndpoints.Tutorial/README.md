@@ -1,43 +1,105 @@
 # AxisEndpoints Quick Tutorial
 
-This project is a quick tutorial for trying out AxisEndpoints. 
+This project is a minimal tutorial for trying out AxisEndpoints with Scalar API reference.
 
 ## Requirements
 
-.NET SDK 10.0 or later is required to run this project. You can download it from the official .NET website: 
+You need .NET SDK 10.0 or later.
 
-> [Download .NET SDK](https://dotnet.microsoft.com/download)
-
-## Getting Started
-
-First, create a new ASP.NET Core Web API project and add the AxisEndpoints package:
+## Start From Scratch
 
 ```sh
-# Create a new directory and navigate into it
 mkdir AxisEndpoints.Tutorial
 cd AxisEndpoints.Tutorial
-
-# Create a new ASP.NET Core Web API project
 dotnet new webapi
-
-# Add the AxisEndpoints package
 dotnet add package AxisEndpoints
-```
-
-Next, if you want to use the Scalar API reference, add the `Scalar.AspNetCore` package:
-
-```sh
-# Add the Scalar.AspNetCore package (optional)
 dotnet add package Scalar.AspNetCore
 ```
 
-Then, configure the application to use AxisEndpoints in `Program.cs`:
+## Program.cs
 
-Next, create a new endpoint by adding a new class `HelloEndpoint.cs` in the `Features/Hello` directory:
+```csharp
+using AxisEndpoints.Extensions;
+using Scalar.AspNetCore;
 
+var builder = WebApplication.CreateBuilder(args);
 
-To run the application, execute `dotnet run` in the terminal.
+builder.Services.AddOpenApi();
+builder.Services.AddAxisEndpoints();
 
-Scalar API reference is available at `http://localhost:{port}/scalar` after running the application.
+var app = builder.Build();
+
+app.MapOpenApi();
+app.MapAxisEndpoints();
+app.MapScalarApiReference();
+
+app.Run();
+```
+
+## HelloEndpoint.cs
+
+Create `Features/Hello/HelloEndpoint.cs` with the following content:
+
+```csharp
+using AxisEndpoints;
+using System.Net;
+
+namespace AxisEndpoints.Tutorial.Features.Hello;
+
+public record HelloRequest
+{
+    public required string Name { get; set; } = string.Empty;
+}
+
+public record HelloResponse
+{
+    public required string Message { get; set; } = string.Empty;
+}
+
+public class HelloEndpoint(ILogger<HelloEndpoint> logger) : IEndpoint<HelloRequest, IResult>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config
+            .Get("/hello")
+            .ProducesSuccess<HelloResponse>()
+            .ProducesError(HttpStatusCode.BadRequest)
+            .Summary("Hello")
+            .Description("This endpoint takes a name as input and returns a greeting message.");
+    }
+
+    public Task<IResult> HandleAsync(HelloRequest request, CancellationToken cancel)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            logger.LogWarning("Rejected request to /hello because the name was missing.");
+            return Task.FromResult(
+                Results.Problem(
+                    title: "Name is required",
+                    detail: "Provide a non-empty name query parameter.",
+                    statusCode: StatusCodes.Status400BadRequest
+                )
+            );
+        }
+
+        logger.LogInformation("Received request to /hello with name: {Name}", request.Name);
+
+        return Task.FromResult(
+            Results.Json(new HelloResponse
+            {
+                Message = $"Hello, {request.Name}!",
+            })
+        );
+    }
+}
+```
+
+## Run It
+
+```sh
+dotnet run
+```
+
+Open the Scalar API reference at `http://localhost:{port}/scalar`, then try `GET /hello?name=Alice`.
 
 ![Scalar API Reference](./assets/scalar.png)
