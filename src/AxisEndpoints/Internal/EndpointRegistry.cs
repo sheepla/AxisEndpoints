@@ -474,13 +474,14 @@ internal static class EndpointRegistry
             // When TResult is Response<TBody>, register Produces(200) automatically from the
             // inferred response type. When TResult is IResult, skip auto-registration — the
             // caller is responsible for declaring response shapes via ProducesSuccess/ProducesError.
+            var openApiResponseType = GetOpenApiResponseType(config.ResponseType);
             var isIResult =
-                config.ResponseType == typeof(IResult)
-                || typeof(IResult).IsAssignableFrom(config.ResponseType);
+                openApiResponseType == typeof(IResult)
+                || typeof(IResult).IsAssignableFrom(openApiResponseType);
 
             if (!isIResult)
             {
-                routeBuilder.Produces(200, config.ResponseType);
+                routeBuilder.Produces(200, openApiResponseType);
             }
         }
 
@@ -488,6 +489,19 @@ internal static class EndpointRegistry
         {
             routeBuilder.Produces(statusCode, bodyType);
         }
+    }
+
+    private static Type GetOpenApiResponseType(Type responseType)
+    {
+        if (
+            responseType.IsGenericType
+            && responseType.GetGenericTypeDefinition() == typeof(Response<>)
+        )
+        {
+            return responseType.GetGenericArguments()[0];
+        }
+
+        return responseType;
     }
 
     private static void ApplyGroupMetadata(

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json.Nodes;
 using FluentAssertions;
 
 namespace AxisEndpoints.Tests.Integration;
@@ -68,5 +69,19 @@ public class EndpointIntegrationTests : IClassFixture<TestWebApplicationFactory>
         var body = await response.Content.ReadFromJsonAsync<HelloResponse>();
         body.Should().NotBeNull();
         body!.Message.Should().Be("Grouped!");
+    }
+
+    [Fact]
+    public async Task OpenApi_UsesResponseBodyTypeInsteadOfResponseWrapper()
+    {
+        var document = await _client.GetFromJsonAsync<JsonObject>("/openapi/v1.json");
+
+        document.Should().NotBeNull();
+
+        var schema = document!["paths"]?["/hello"]?["get"]?["responses"]?["200"]?["content"]?["application/json"]?["schema"];
+        schema.Should().NotBeNull();
+        schema!["$ref"]!.GetValue<string>().Should().Be("#/components/schemas/HelloResponse");
+
+        document["components"]?["schemas"]?["ResponseOfHelloResponse"].Should().BeNull();
     }
 }
