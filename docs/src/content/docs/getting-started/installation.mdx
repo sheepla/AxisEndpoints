@@ -5,16 +5,11 @@ description: "Install AxisEndpoints and optional extension packages in your ASP.
 
 import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-## NuGet Packages (Recommended)
 
-<CardGrid>
-  <LinkCard title="AxisEndpoints" href="https://www.nuget.org/packages/AxisEndpoints" description="Core package" />
-  <LinkCard title="AxisEndpoints.Extensions.CsvHelper" href="https://www.nuget.org/packages/AxisEndpoints.Extensions.CsvHelper" description="CSV import/export extension" />
-</CardGrid>
 
-## Install from nuget.org
+## Install from nuget.org (Recommended)
 
-Add the core package to your project:
+Packages are available on nuget.org. Run the following command in your project directory to install the core package:
 
 ```sh
 dotnet add package AxisEndpoints
@@ -25,6 +20,11 @@ For the CSV extension:
 ```sh
 dotnet add package AxisEndpoints.Extensions.CsvHelper
 ```
+
+<CardGrid>
+  <LinkCard title="AxisEndpoints" href="https://www.nuget.org/packages/AxisEndpoints" description="Core package" />
+  <LinkCard title="AxisEndpoints.Extensions.CsvHelper" href="https://www.nuget.org/packages/AxisEndpoints.Extensions.CsvHelper" description="CSV import/export extension" />
+</CardGrid>
 
 ## Install from local nupkg
 
