@@ -64,8 +64,7 @@ dotnet add <YourProject> package AxisEndpoints --source <LocalNupkgDirectory>
 
 ## Documentation
 
-For detailed usage guides, API reference, and examples, visit the [documentation site](./docs/).
-<!-- TODO: ドキュメントサイトをデプロイしたら、ここのリンクをデプロイ先URLに更新する -->
+For detailed usage guides, API reference, and examples, visit the [documentation site](https://sheepla.github.io/AxisEndpoints/).
 
 ## Author
 
