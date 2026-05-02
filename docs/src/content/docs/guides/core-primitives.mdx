@@ -1,108 +1,108 @@
 ---
 title: "Core Primitives"
-description: "AxisEndpoints が提供する主要な型の一覧と、それぞれの役割を解説します。"
+description: "An overview of the core types provided by AxisEndpoints and what each one is used for."
 ---
 
-AxisEndpoints は、ASP.NET Core Minimal API の上に薄い抽象化レイヤーを提供します。以下の型を理解することで、ライブラリの全体像を把握できます。
+AxisEndpoints provides a thin abstraction layer on top of ASP.NET Core Minimal APIs. Understanding the following types will give you a clear picture of how the library fits together.
 
-## 型の一覧
+## Type Overview
 
 ### `IEndpoint<TRequest, TResult>` / `IEndpoint<TResult>`
 
-エンドポイント定義の中核となるインタフェースです。`Configure()` でルーティングやメタデータを宣言し、`HandleAsync()` でリクエストを処理します。リクエストパラメータがある場合は `IEndpoint<TRequest, TResult>` を、パラメータなしの場合は `IEndpoint<TResult>` を使います。
+These are the core interfaces for endpoint definitions. Use `Configure()` to declare routing and metadata, and `HandleAsync()` to process the request. Use `IEndpoint<TRequest, TResult>` when the endpoint has request parameters, and `IEndpoint<TResult>` when it does not.
 
-詳しくは [Defining Endpoints](/guides/defining-endpoints/) を参照してください。
+See [Defining Endpoints](/guides/defining-endpoints/) for details.
 
 ### `IEndpointConfiguration`
 
-`Configure()` メソッド内で使用する設定インタフェースです。HTTP メソッドとルートの指定、OpenAPI メタデータ（タグ、サマリー、説明）、認可ポリシー、フィルタ、レスポンス型の宣言を行います。
+This configuration interface is used inside `Configure()`. It lets you declare the HTTP method and route, OpenAPI metadata such as tags, summaries, and descriptions, authorization policies, filters, and response types.
 
 ### `Response<TBody>`
 
-JSON 応答のラッパー型です。`StatusCode`（デフォルト: 200 OK）、`Headers`（オプション）、`Body`（必須）の3つのプロパティを持ちます。`HandleAsync` の戻り値として使用すると、200 のスキーマが OpenAPI に自動登録されます。
+This is a wrapper type for JSON responses. It has three properties: `StatusCode` (default: 200 OK), `Headers` (optional), and `Body` (required). When used as the return type of `HandleAsync`, the 200 response schema is registered in OpenAPI automatically.
 
-詳しくは [Response Types](/guides/response-types/) を参照してください。
+See [Response Types](/guides/response-types/) for details.
 
 ### `EmptyResponse`
 
-ボディなし応答のマーカー型です。`Response<EmptyResponse>` として使用します。`Response.Empty`（200 OK）と `Response.NoContent`（204 No Content）のショートハンドが用意されています。
+This is a marker type for responses without a body. Use it as `Response<EmptyResponse>`. The `Response.Empty` (200 OK) and `Response.NoContent` (204 No Content) shorthands are available.
 
 ### `IResult`
 
-ASP.NET Core Minimal API が提供するインタフェースです。`Results.Json()`, `Results.Problem()`, `Results.Ok()` などのファクトリメソッドで生成します。AxisEndpoints では `HandleAsync` の戻り値として使うことで、複数のレスポンス形状を返せます。`IResult` を返す場合は `ProducesSuccess<TBody>()` と `ProducesError(HttpStatusCode)` で OpenAPI メタデータを明示的に宣言する必要があります。
+This interface comes from ASP.NET Core Minimal APIs. It is produced by factory methods such as `Results.Json()`, `Results.Problem()`, and `Results.Ok()`. In AxisEndpoints, returning `IResult` from `HandleAsync` lets you produce multiple response shapes. When you return `IResult`, you must declare OpenAPI metadata explicitly with `ProducesSuccess<TBody>()` and `ProducesError(HttpStatusCode)`.
 
-詳しくは [Error Responses](/guides/error-responses/) を参照してください。
+See [Error Responses](/guides/error-responses/) for details.
 
 ### `EndpointContext`
 
-HTTP コンテキストへの制御されたアクセスを提供するクラスです。コンストラクタインジェクションで取得し、リクエストヘッダー、認証ユーザー、クエリパラメータ、ルート値などにアクセスできます。
+This class provides controlled access to the HTTP context. Inject it through the constructor to access request headers, the authenticated user, query parameters, route values, and more.
 
-| メンバー | 型 | 説明 |
+| Member | Type | Description |
 | --- | --- | --- |
-| `RequestHeaders` | `IHeaderDictionary` | リクエストヘッダー |
-| `User` | `ClaimsPrincipal` | 認証済みユーザー |
-| `Query` | `IQueryCollection` | クエリ文字列 |
-| `GetRouteValue(key)` | `string?` | ルートパラメータ |
-| `RawResponse` | `HttpResponse` | レスポンスストリームへの直接アクセス |
+| `RequestHeaders` | `IHeaderDictionary` | Request headers |
+| `User` | `ClaimsPrincipal` | Authenticated user |
+| `Query` | `IQueryCollection` | Query string |
+| `GetRouteValue(key)` | `string?` | Route parameter |
+| `RawResponse` | `HttpResponse` | Direct access to the response stream |
 
-詳しくは [HTTP Context](/guides/http-context/) を参照してください。
+See [HTTP Context](/guides/http-context/) for details.
 
 ### `IEndpointGroup` / `IEndpointGroupConfiguration`
 
-複数のエンドポイントが共通のルートプレフィックス、タグ、認可ポリシー、フィルタを共有するための仕組みです。`IEndpointGroup` を実装してグループを定義し、エンドポイント側から `config.Group<TGroup>()` で参照します。
+This mechanism allows multiple endpoints to share a common route prefix, tags, authorization policies, and filters. Implement `IEndpointGroup` to define a group and reference it from endpoints with `config.Group<TGroup>()`.
 
-詳しくは [Endpoint Groups](/guides/endpoint-groups/) を参照してください。
+See [Endpoint Groups](/guides/endpoint-groups/) for details.
 
 ### `IEndpointFilter`
 
-ASP.NET Core Minimal API が提供するフィルタインタフェースです。リクエストパイプラインの途中で処理を挟むことができます。ミドルウェアと異なり、特定のエンドポイントやグループにスコープを限定できます。AxisEndpoints では `config.AddFilter<TFilter>()` で登録し、DI コンテナから解決されます。
+This filter interface comes from ASP.NET Core Minimal APIs. It lets you run logic before or after the request reaches the handler. Unlike middleware, filters can be scoped to specific endpoints or groups. In AxisEndpoints, register them with `config.AddFilter<TFilter>()`, and they are resolved from the DI container.
 
-詳しくは [Filters](/guides/filters/) を参照してください。
+See [Filters](/guides/filters/) for details.
 
 ### `ProblemDetails`
 
-ASP.NET Core の `Microsoft.AspNetCore.Mvc.ProblemDetails` クラスで、RFC 9457（旧 RFC 7807）に準拠したエラーレスポンスの標準形式です。
+This is ASP.NET Core's `Microsoft.AspNetCore.Mvc.ProblemDetails` type, the standard error response format defined by RFC 9457 (formerly RFC 7807).
 
-主なフィールド:
+Common fields:
 
-| フィールド | 説明 |
+| Field | Description |
 | --- | --- |
-| `type` | エラー種別を識別する URI |
-| `title` | エラーの短い要約 |
-| `status` | HTTP ステータスコード |
-| `detail` | エラーの詳細な説明 |
-| `errors` | バリデーションエラーなどの追加情報 |
+| `type` | URI that identifies the error category |
+| `title` | Short summary of the error |
+| `status` | HTTP status code |
+| `detail` | Detailed explanation of the error |
+| `errors` | Additional details such as validation errors |
 
-API でエラーが発生した際に一貫した形式でクライアントにエラー情報を返すために使用します。AxisEndpoints の DataAnnotations バリデーションフィルタもこの形式でエラーを返します。`ProducesError(HttpStatusCode)` を使うと、OpenAPI ドキュメントに `ProblemDetails` がエラーレスポンスの型として自動的に登録されます。
+Use this format to return consistent error information to clients when an API request fails. AxisEndpoints' DataAnnotations validation filter also returns errors in this format. When you use `ProducesError(HttpStatusCode)`, `ProblemDetails` is registered automatically as the error response type in OpenAPI.
 
-詳しくは [Error Responses](/guides/error-responses/) を参照してください。
+See [Error Responses](/guides/error-responses/) for details.
 
 ---
 
-## どの型を使うべきか
+## Which Type Should I Use?
 
-以下のフローチャートで、エンドポイントの設計時にどの型を選ぶか判断できます。
+Use the following flowchart to decide which type to choose when designing an endpoint.
 
 ```mermaid
 flowchart TD
-    A["エンドポイントにリクエストパラメータはあるか?"] -->|"はい"| B["IEndpoint&lt;TRequest, TResult&gt;"]
-    A -->|"いいえ"| C["IEndpoint&lt;TResult&gt;"]
-    B --> D["レスポンスの形式は?"]
+    A["Does the endpoint have request parameters?"] -->|"Yes"| B["IEndpoint&lt;TRequest, TResult&gt;"]
+    A -->|"No"| C["IEndpoint&lt;TResult&gt;"]
+    B --> D["What response shape do you need?"]
     C --> D
-    D -->|"JSON応答"| E["Response&lt;TBody&gt;"]
-    D -->|"ボディなし"| F["Response&lt;EmptyResponse&gt;"]
-    D -->|"複数のレスポンス形状 / カスタム"| G["IResult"]
-    E --> H["完了"]
+    D -->|"JSON response"| E["Response&lt;TBody&gt;"]
+    D -->|"No body"| F["Response&lt;EmptyResponse&gt;"]
+    D -->|"Multiple response shapes / custom"| G["IResult"]
+    E --> H["Done"]
     F --> H
-    G --> I["ProducesSuccess / ProducesError で OpenAPI メタデータを宣言"]
+    G --> I["Declare OpenAPI metadata with ProducesSuccess / ProducesError"]
     I --> H
 ```
 
 ---
 
-## 型の関係
+## Type Relationships
 
-以下のクラス図は、主要な型がどのように関連しているかを示します。
+The following diagram shows how the core types relate to each other.
 
 ```mermaid
 classDiagram
@@ -134,18 +134,18 @@ classDiagram
 
 ---
 
-## ASP.NET Core 標準型の補足
+## Notes on ASP.NET Core Standard Types
 
-AxisEndpoints は ASP.NET Core の標準型をそのまま活用しています。以下の型は AxisEndpoints 固有のものではなく、ASP.NET Core Minimal API の知識がそのまま適用できます。
+AxisEndpoints builds directly on ASP.NET Core standard types. The types below are not AxisEndpoints-specific, so standard Minimal API knowledge applies as-is.
 
 ### `IResult`
 
-ASP.NET Core Minimal API が提供するインタフェースで、HTTP レスポンスを表現します。`Results.Json()`, `Results.Problem()`, `Results.Ok()`, `Results.NotFound()` などのファクトリメソッドで生成します。AxisEndpoints では `HandleAsync` の戻り値の型として `IResult` を指定することで、条件に応じて異なるレスポンス形状（成功時は JSON、エラー時は `ProblemDetails` など）を返すことができます。
+This interface is provided by ASP.NET Core Minimal APIs and represents an HTTP response. It is produced by factory methods such as `Results.Json()`, `Results.Problem()`, `Results.Ok()`, and `Results.NotFound()`. In AxisEndpoints, specifying `IResult` as the return type of `HandleAsync` lets you return different response shapes based on the outcome, such as JSON on success and `ProblemDetails` on error.
 
 ### `ProblemDetails`
 
-`Microsoft.AspNetCore.Mvc.ProblemDetails` クラスは、RFC 9457（旧 RFC 7807）に準拠したエラーレスポンスの標準形式を提供します。`type`, `title`, `status`, `detail`, `errors` などのフィールドを持ち、API のエラーレスポンスに一貫性をもたらします。AxisEndpoints の DataAnnotations バリデーションフィルタもこの形式でバリデーションエラーを返します。
+`Microsoft.AspNetCore.Mvc.ProblemDetails` provides the standard error response format defined by RFC 9457 (formerly RFC 7807). It includes fields such as `type`, `title`, `status`, `detail`, and `errors`, which bring consistency to API error responses. AxisEndpoints' DataAnnotations validation filter also returns validation errors in this format.
 
 ### `IEndpointFilter`
 
-ASP.NET Core Minimal API が提供するフィルタインタフェースで、リクエストパイプラインの途中で処理を挟むことができます。ミドルウェアと異なり、特定のエンドポイントやグループにスコープを限定できるため、横断的関心事をきめ細かく制御できます。
+This filter interface is provided by ASP.NET Core Minimal APIs and lets you insert logic into the request pipeline. Unlike middleware, it can be scoped to specific endpoints or groups, which gives you finer control over cross-cutting concerns.

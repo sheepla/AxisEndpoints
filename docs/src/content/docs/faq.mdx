@@ -1,28 +1,28 @@
 ---
 title: "FAQ"
-description: "AxisEndpoints に関するよくある質問と回答をまとめています。"
+description: "Answers to frequently asked questions about AxisEndpoints."
 ---
 
-## なぜ AxisEndpoints を作ったのですか？
+## Why did you build AxisEndpoints?
 
-REPR（Request-Endpoint-Response）パターンを ASP.NET Core で実装するにあたり、Minimal API をベースとした明示的なインタフェースを提供し、型安全で OpenAPI-first な設計を備えたライブラリが見当たらなかったためです。
+I built AxisEndpoints because I could not find a library for implementing the REPR (Request-Endpoint-Response) pattern in ASP.NET Core that offered explicit Minimal API-based interfaces, strong type safety, and an OpenAPI-first design.
 
-[FastEndpoints](https://fast-endpoints.com/) のような既存ライブラリは強力ですが、ASP.NET Core 標準の規約から離れた独自の抽象化を多く導入しており、学習コストが高くなりがちです。AxisEndpoints は、Minimal API の知識がそのまま活きるよう、標準 API サーフェスに近い設計を目指しています。
+Existing libraries such as [FastEndpoints](https://fast-endpoints.com/) are powerful, but they introduce many custom abstractions that diverge from standard ASP.NET Core conventions and can increase the learning curve. AxisEndpoints aims to stay close to the standard API surface so existing Minimal API knowledge carries over directly.
 
-## REPR パターンは本当に必要ですか？
+## Do I really need the REPR pattern?
 
-プロジェクトの規模と性質によります。小規模な API であれば Minimal API で十分ですし、CRUD 操作がメインなら Controller も有力な選択肢です。ただし、それぞれにトレードオフがあります。
+It depends on the size and nature of your project. For small APIs, Minimal APIs may be enough. If your application is mostly CRUD, Controllers are also a strong option. Each approach has trade-offs.
 
-- **Minimal API** はエンドポイントが増えると管理が難しくなります
-- **Controller** はクラスが肥大化しがちです
+- **Minimal APIs** become harder to manage as the number of endpoints grows
+- **Controllers** tend to accumulate too much responsibility in a single class
 
-REPR パターンは各エンドポイントを自己完結させることで機能間の干渉を防ぎ、安定してスケールできます。特に Vertical Slice Architecture を採用する場合におすすめです。
+The REPR pattern keeps each endpoint self-contained, which reduces coupling between features and scales more predictably. It is especially useful when you adopt Vertical Slice Architecture.
 
-プロジェクトの特性に合わせて使い分けてください。トップページの比較表も参照してください: [Why REPR?](/)
+Choose the approach that fits your project. You can also refer to the comparison table on the top page: [Why REPR?](/)
 
-## OpenAPI に型情報が載りません
+## Why is my response type missing from OpenAPI?
 
-`HandleAsync` の戻り値が `IResult` の場合、フレームワークはレスポンスの型を自動推論できません。`Configure()` 内で `.ProducesSuccess<TBody>()` と `.ProducesError(HttpStatusCode)` を明示的に指定してください。
+If `HandleAsync` returns `IResult`, the framework cannot infer the response type automatically. Declare it explicitly in `Configure()` with `.ProducesSuccess<TBody>()` and `.ProducesError(HttpStatusCode)`.
 
 ```csharp
 public void Configure(IEndpointConfiguration config)
@@ -34,6 +34,6 @@ public void Configure(IEndpointConfiguration config)
 }
 ```
 
-`Response<TBody>` を返す場合は 200 のスキーマが自動登録されるため、これらの指定は不要です。
+If you return `Response<TBody>`, the 200 response schema is registered automatically, so these calls are not needed.
 
-詳しくは [Error Responses](/guides/error-responses/) ガイドを参照してください。
+See the [Error Responses](/guides/error-responses/) guide for details.

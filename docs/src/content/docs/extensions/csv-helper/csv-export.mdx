@@ -35,20 +35,20 @@ public sealed class ExportUsersEndpoint : IEndpoint<CsvResponse<UserExportRow>>
 
 `CsvResponse.From` also accepts `IEnumerable<T>` for synchronous sequences.
 
-## `CsvResponse.From` パラメータ
+## `CsvResponse.From` Parameters
 
-`CsvResponse.From` は以下のパラメータを受け取ります:
+`CsvResponse.From` accepts the following parameters:
 
-| パラメータ | 型 | デフォルト値 | 説明 |
+| Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `rows` | `IAsyncEnumerable<TRow>` or `IEnumerable<TRow>` | *(必須)* | CSV として出力する行のシーケンス |
-| `classMap` | `ClassMap?` | `null` | CsvHelper の `ClassMap` によるカラムマッピング・フォーマット設定。`null` の場合は CsvHelper の規約ベースのマッピングおよび `TRow` の属性が使用されます |
-| `fileName` | `string` | `"export.csv"` | `Content-Disposition` ヘッダーに設定されるファイル名 |
-| `statusCode` | `HttpStatusCode` | `HttpStatusCode.OK` | HTTP ステータスコード |
-| `configuration` | `CsvConfiguration?` | `null` | CsvHelper の書き込み設定。`null` の場合は `CultureInfo.InvariantCulture` を使用した既定の設定が適用されます |
+| `rows` | `IAsyncEnumerable<TRow>` or `IEnumerable<TRow>` | *(required)* | Sequence of rows to write as CSV |
+| `classMap` | `ClassMap?` | `null` | Column mapping and formatting configuration through CsvHelper `ClassMap`. If `null`, CsvHelper convention-based mapping and attributes on `TRow` are used |
+| `fileName` | `string` | `"export.csv"` | File name written to the `Content-Disposition` header |
+| `statusCode` | `HttpStatusCode` | `HttpStatusCode.OK` | HTTP status code |
+| `configuration` | `CsvConfiguration?` | `null` | CsvHelper writer configuration. If `null`, the default configuration using `CultureInfo.InvariantCulture` is applied |
 
 ```csharp
-// すべてのパラメータを指定する例
+// Example with all parameters specified
 CsvResponse.From(
     rows,
     classMap: new UserRowMap(),
