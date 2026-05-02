@@ -18,7 +18,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    // OpenAPI document available at /scalar/v1
+    // OpenAPI document available at /scalar
     app.MapScalarApiReference();
 }
 
