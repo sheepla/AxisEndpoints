@@ -3,15 +3,15 @@ title: "Quick Start"
 description: "Create a minimal AxisEndpoints project from scratch and verify it with Scalar."
 ---
 
-import { Steps } from '@astrojs/starlight/components';
+import { Steps } from "@astrojs/starlight/components";
 
 <Steps>
 1. **Create a new project**
 
-   ```sh
-   dotnet new webapi -n AxisEndpoints.Tutorial
-   cd AxisEndpoints.Tutorial
-   ```
+```sh
+dotnet new webapi -n AxisEndpoints.Tutorial
+cd AxisEndpoints.Tutorial
+```
 
 2. **Install the packages**
 
@@ -145,9 +145,13 @@ import { Steps } from '@astrojs/starlight/components';
 The tutorial project included in this repository uses the same setup and exposes the Scalar UI after startup.
 
 <img
-  src="/images/tutorial-scalar.png"
+  src="./images/tutorial-scalar.png"
   alt="Scalar API reference showing the tutorial hello endpoint"
-  style={{ borderRadius: '0.75rem', border: '1px solid var(--sl-color-hairline-light)', width: '100%' }}
+  style={{
+    borderRadius: "0.75rem",
+    border: "1px solid var(--sl-color-hairline-light)",
+    width: "100%",
+  }}
 />
 
 For more details on endpoint structure and request binding, see [Defining Endpoints](/guides/defining-endpoints/) and [Request Binding](/guides/request-binding/).
