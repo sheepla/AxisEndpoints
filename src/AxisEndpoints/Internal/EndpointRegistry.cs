@@ -475,11 +475,14 @@ internal static class EndpointRegistry
             // inferred response type. When TResult is IResult, skip auto-registration — the
             // caller is responsible for declaring response shapes via ProducesSuccess/ProducesError.
             var openApiResponseType = GetOpenApiResponseType(config.ResponseType);
+            var isNoBodyResponse =
+                openApiResponseType == typeof(EmptyResponse)
+                || typeof(EmptyResponse).IsAssignableFrom(openApiResponseType);
             var isIResult =
                 openApiResponseType == typeof(IResult)
                 || typeof(IResult).IsAssignableFrom(openApiResponseType);
 
-            if (!isIResult)
+            if (!isIResult && !isNoBodyResponse)
             {
                 routeBuilder.Produces(200, openApiResponseType);
             }

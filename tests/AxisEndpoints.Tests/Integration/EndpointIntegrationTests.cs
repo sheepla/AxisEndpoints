@@ -84,4 +84,22 @@ public class EndpointIntegrationTests : IClassFixture<TestWebApplicationFactory>
 
         document["components"]?["schemas"]?["ResponseOfHelloResponse"].Should().BeNull();
     }
+
+    [Fact]
+    public async Task OpenApi_DoesNotRegisterEmptyResponseAsJsonBody()
+    {
+        var document = await _client.GetFromJsonAsync<JsonObject>("/openapi/v1.json");
+
+        document.Should().NotBeNull();
+
+        var responses = document!["paths"]?["/items/{id}"]?["delete"]?["responses"]?.AsObject();
+        responses.Should().NotBeNull();
+
+        var successResponse = responses!["200"] ?? responses["204"];
+        successResponse.Should().NotBeNull();
+        successResponse!["content"]?["application/json"]?["schema"].Should().BeNull();
+
+        document["components"]?["schemas"]?["ResponseOfEmptyResponse"].Should().BeNull();
+        document["components"]?["schemas"]?["EmptyResponse"].Should().BeNull();
+    }
 }
