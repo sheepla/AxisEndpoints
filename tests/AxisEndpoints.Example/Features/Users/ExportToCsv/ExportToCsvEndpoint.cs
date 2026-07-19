@@ -31,7 +31,12 @@ public sealed class ExportToCsvEndpoint : IEndpoint<CsvResponse<UserExportRow>>
             .Get("/users/export")
             .Group<UsersEndpointGroup>()
             .Summary("Export users as CSV")
-            .Description("Streams all users as a downloadable CSV file.");
+            .Description("Streams all users as a downloadable CSV file.")
+            // CsvResponse<TRow> implements IResult, so the framework cannot infer the
+            // success response shape automatically. Declare it explicitly, or the OpenAPI
+            // document will have no documented success response for this endpoint.
+            // The actual response content type is text/csv, not the application/json default.
+            .ProducesSuccess<UserExportRow>(contentType: "text/csv");
     }
 
     public Task<CsvResponse<UserExportRow>> HandleAsync(CancellationToken cancel)

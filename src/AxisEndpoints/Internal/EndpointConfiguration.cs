@@ -12,13 +12,10 @@ internal sealed class EndpointConfiguration : IEndpointConfiguration
     internal string[] Tags { get; private set; } = [];
     internal string SummaryText { get; private set; } = string.Empty;
     internal string DescriptionText { get; private set; } = string.Empty;
-    internal bool IsAnonymousAllowed { get; private set; }
 
-    // Authorization state: mutually exclusive — last call wins.
-    // Roles, PolicyName, and PolicyBuilder correspond to the three RequireAuthorization overloads.
-    internal string[] Roles { get; private set; } = [];
-    internal string? PolicyName { get; private set; }
-    internal Action<AuthorizationPolicyBuilder>? PolicyBuilder { get; private set; }
+    // Authorization state: a single value — last call wins.
+    internal AuthorizationRequirement Authorization { get; private set; } =
+        AuthorizationRequirement.Default;
 
     internal Type? GroupType { get; private set; }
     internal EndpointGroupConfiguration? GroupConfig { get; private set; }
@@ -29,7 +26,9 @@ internal sealed class EndpointConfiguration : IEndpointConfiguration
 
     // Explicit OpenAPI response declarations from ProducesSuccess/ProducesError.
     // Used when HandleAsync returns IResult and the response schema cannot be inferred.
-    internal List<(int StatusCode, Type BodyType)> ExtraProducesEntries { get; } = [];
+    // ContentType is null when the default (application/json) should be used.
+    internal List<(int StatusCode, Type BodyType, string? ContentType)> ExtraProducesEntries { get; } =
+        [];
 
     IEndpointConfiguration IEndpointConfiguration.Get([StringSyntax("Route")] string route) =>
         SetMethod(HttpEndpointMethod.Get, route);
@@ -61,25 +60,22 @@ internal sealed class EndpointConfiguration : IEndpointConfiguration
 
     IEndpointConfiguration IEndpointConfiguration.AllowAnonymous()
     {
-        IsAnonymousAllowed = true;
+        Authorization = new AuthorizationRequirement.Anonymous();
         return this;
     }
 
     IEndpointConfiguration IEndpointConfiguration.RequireAuthorization(params string[] roles)
     {
-        IsAnonymousAllowed = false;
-        Roles = roles;
-        PolicyName = null;
-        PolicyBuilder = null;
+        Authorization =
+            roles.Length > 0
+                ? new AuthorizationRequirement.Roles(roles)
+                : new AuthorizationRequirement.AuthenticatedUser();
         return this;
     }
 
     IEndpointConfiguration IEndpointConfiguration.RequireAuthorization(string policy)
     {
-        IsAnonymousAllowed = false;
-        PolicyName = policy;
-        Roles = [];
-        PolicyBuilder = null;
+        Authorization = new AuthorizationRequirement.NamedPolicy(policy);
         return this;
     }
 
@@ -87,10 +83,7 @@ internal sealed class EndpointConfiguration : IEndpointConfiguration
         Action<AuthorizationPolicyBuilder> build
     )
     {
-        IsAnonymousAllowed = false;
-        PolicyBuilder = build;
-        Roles = [];
-        PolicyName = null;
+        Authorization = new AuthorizationRequirement.CustomPolicy(build);
         return this;
     }
 
@@ -112,21 +105,30 @@ internal sealed class EndpointConfiguration : IEndpointConfiguration
         return this;
     }
 
-    IEndpointConfiguration IEndpointConfiguration.ProducesSuccess<TBody>(HttpStatusCode statusCode)
+    IEndpointConfiguration IEndpointConfiguration.ProducesSuccess<TBody>(
+        HttpStatusCode statusCode,
+        string? contentType
+    )
     {
-        ExtraProducesEntries.Add(((int)statusCode, typeof(TBody)));
+        ExtraProducesEntries.Add(((int)statusCode, typeof(TBody), contentType));
         return this;
     }
 
-    IEndpointConfiguration IEndpointConfiguration.ProducesError(HttpStatusCode statusCode)
+    IEndpointConfiguration IEndpointConfiguration.ProducesError(
+        HttpStatusCode statusCode,
+        string? contentType
+    )
     {
-        ExtraProducesEntries.Add(((int)statusCode, typeof(ProblemDetails)));
+        ExtraProducesEntries.Add(((int)statusCode, typeof(ProblemDetails), contentType));
         return this;
     }
 
-    IEndpointConfiguration IEndpointConfiguration.ProducesError<TError>(HttpStatusCode statusCode)
+    IEndpointConfiguration IEndpointConfiguration.ProducesError<TError>(
+        HttpStatusCode statusCode,
+        string? contentType
+    )
     {
-        ExtraProducesEntries.Add(((int)statusCode, typeof(TError)));
+        ExtraProducesEntries.Add(((int)statusCode, typeof(TError), contentType));
         return this;
     }
 

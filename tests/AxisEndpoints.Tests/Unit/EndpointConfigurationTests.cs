@@ -91,58 +91,80 @@ public class EndpointConfigurationTests
     }
 
     [Fact]
-    public void AllowAnonymous_SetsIsAnonymousAllowed()
+    public void AllowAnonymous_SetsAnonymousRequirement()
     {
         _config.Get("/test").AllowAnonymous();
 
-        Internal.IsAnonymousAllowed.Should().BeTrue();
+        Internal.Authorization.Should().BeOfType<AuthorizationRequirement.Anonymous>();
     }
 
     [Fact]
-    public void RequireAuthorization_WithRoles_SetsRolesAndClearsAnonymous()
+    public void RequireAuthorization_WithRoles_SetsRolesRequirement()
     {
         _config.Get("/test").RequireAuthorization("Admin", "User");
 
-        Internal.Roles.Should().BeEquivalentTo("Admin", "User");
-        Internal.IsAnonymousAllowed.Should().BeFalse();
-        Internal.PolicyName.Should().BeNull();
-        Internal.PolicyBuilder.Should().BeNull();
+        Internal
+            .Authorization.Should()
+            .BeOfType<AuthorizationRequirement.Roles>()
+            .Which.Names.Should()
+            .BeEquivalentTo("Admin", "User");
     }
 
     [Fact]
-    public void RequireAuthorization_WithPolicy_SetsPolicyNameAndClearsRoles()
+    public void RequireAuthorization_WithoutRoles_RequiresAuthenticatedUser()
+    {
+        _config.Get("/test").RequireAuthorization();
+
+        Internal.Authorization.Should().BeOfType<AuthorizationRequirement.AuthenticatedUser>();
+    }
+
+    [Fact]
+    public void RequireAuthorization_WithPolicy_SetsNamedPolicyRequirement()
     {
         _config.Get("/test").RequireAuthorization("PolicyName");
 
-        Internal.PolicyName.Should().Be("PolicyName");
-        Internal.Roles.Should().BeEmpty();
-        Internal.PolicyBuilder.Should().BeNull();
-        Internal.IsAnonymousAllowed.Should().BeFalse();
+        Internal
+            .Authorization.Should()
+            .BeOfType<AuthorizationRequirement.NamedPolicy>()
+            .Which.Name.Should()
+            .Be("PolicyName");
     }
 
     [Fact]
-    public void RequireAuthorization_WithBuilder_SetsPolicyBuilderAndClearsOthers()
+    public void RequireAuthorization_WithBuilder_SetsCustomPolicyRequirement()
     {
         Action<AuthorizationPolicyBuilder> builder = b => b.RequireRole("Admin");
 
         _config.Get("/test").RequireAuthorization(builder);
 
-        Internal.PolicyBuilder.Should().BeSameAs(builder);
-        Internal.Roles.Should().BeEmpty();
-        Internal.PolicyName.Should().BeNull();
-        Internal.IsAnonymousAllowed.Should().BeFalse();
+        Internal
+            .Authorization.Should()
+            .BeOfType<AuthorizationRequirement.CustomPolicy>()
+            .Which.Build.Should()
+            .BeSameAs(builder);
     }
 
     [Fact]
-    public void RequireAuthorization_Policy_AfterRoles_ClearsRoles()
+    public void RequireAuthorization_Policy_AfterRoles_ReplacesRequirement()
     {
         _config
             .Get("/test")
             .RequireAuthorization("Admin", "User")
             .RequireAuthorization("PolicyName");
 
-        Internal.PolicyName.Should().Be("PolicyName");
-        Internal.Roles.Should().BeEmpty();
+        Internal
+            .Authorization.Should()
+            .BeOfType<AuthorizationRequirement.NamedPolicy>()
+            .Which.Name.Should()
+            .Be("PolicyName");
+    }
+
+    [Fact]
+    public void Authorization_DefaultsToUnspecified()
+    {
+        _config.Get("/test");
+
+        Internal.Authorization.Should().BeOfType<AuthorizationRequirement.Unspecified>();
     }
 
     [Fact]
@@ -154,7 +176,19 @@ public class EndpointConfigurationTests
             .ExtraProducesEntries.Should()
             .ContainSingle()
             .Which.Should()
-            .Be((200, typeof(string)));
+            .Be((200, typeof(string), null));
+    }
+
+    [Fact]
+    public void ProducesSuccess_WithContentType_StoresContentType()
+    {
+        _config.Get("/test").ProducesSuccess<string>(HttpStatusCode.OK, contentType: "text/csv");
+
+        Internal
+            .ExtraProducesEntries.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Be((200, typeof(string), "text/csv"));
     }
 
     [Fact]
@@ -166,7 +200,7 @@ public class EndpointConfigurationTests
             .ExtraProducesEntries.Should()
             .ContainSingle()
             .Which.Should()
-            .Be((404, typeof(Microsoft.AspNetCore.Mvc.ProblemDetails)));
+            .Be((404, typeof(Microsoft.AspNetCore.Mvc.ProblemDetails), null));
     }
 
     [Fact]

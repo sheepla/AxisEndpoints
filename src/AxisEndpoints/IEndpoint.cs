@@ -3,7 +3,7 @@ namespace AxisEndpoints;
 /// <summary>
 /// Defines an endpoint that accepts a typed request body and returns a typed result.
 /// Use this for POST, PUT, and PATCH endpoints.
-/// For GET and DELETE, use <see cref="IEndpoint{TRequest,TResult}"/> with <c>[FromRoute]</c>
+/// For GET, DELETE, and HEAD, use <see cref="IEndpoint{TRequest,TResult}"/> with <c>[FromRoute]</c>
 /// or <c>[FromQuery]</c> attributes on the request properties.
 ///
 /// <typeparamref name="TResult"/> must be either:

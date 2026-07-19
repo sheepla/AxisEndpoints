@@ -51,17 +51,38 @@ public interface IEndpointConfiguration
     /// metadata for <see cref="Response{TBody}"/> endpoints or to declare success metadata when
     /// HandleAsync returns <see cref="IResult"/>.
     /// </summary>
-    IEndpointConfiguration ProducesSuccess<TBody>(HttpStatusCode statusCode = HttpStatusCode.OK);
+    /// <param name="statusCode">The HTTP status code. Defaults to 200 OK.</param>
+    /// <param name="contentType">
+    /// The response content type. Defaults to <c>null</c>, which registers <c>application/json</c>.
+    /// Set this explicitly for non-JSON <see cref="IResult"/> implementations, such as
+    /// <c>CsvResponse&lt;TRow&gt;</c> from the CsvHelper extension, which should be declared
+    /// with <c>"text/csv"</c>.
+    /// </param>
+    IEndpointConfiguration ProducesSuccess<TBody>(
+        HttpStatusCode statusCode = HttpStatusCode.OK,
+        string? contentType = null
+    );
 
     /// <summary>
     /// Declares an error response with <see cref="Microsoft.AspNetCore.Mvc.ProblemDetails"/> as the body type.
     /// </summary>
-    IEndpointConfiguration ProducesError(HttpStatusCode statusCode);
+    /// <param name="statusCode">The HTTP status code.</param>
+    /// <param name="contentType">
+    /// The response content type. Defaults to <c>null</c>, which registers <c>application/json</c>.
+    /// </param>
+    IEndpointConfiguration ProducesError(HttpStatusCode statusCode, string? contentType = null);
 
     /// <summary>
     /// Declares an error response with a custom body type.
     /// </summary>
-    IEndpointConfiguration ProducesError<TError>(HttpStatusCode statusCode);
+    /// <param name="statusCode">The HTTP status code.</param>
+    /// <param name="contentType">
+    /// The response content type. Defaults to <c>null</c>, which registers <c>application/json</c>.
+    /// </param>
+    IEndpointConfiguration ProducesError<TError>(
+        HttpStatusCode statusCode,
+        string? contentType = null
+    );
 
     // Filters — applied in registration order, outermost first
     IEndpointConfiguration AddFilter<TFilter>()

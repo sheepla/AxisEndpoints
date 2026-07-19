@@ -440,22 +440,7 @@ internal static class EndpointRegistry
             routeBuilder.WithDescription(config.DescriptionText);
         }
 
-        if (config.IsAnonymousAllowed)
-        {
-            routeBuilder.AllowAnonymous();
-        }
-        else if (config.PolicyBuilder is not null)
-        {
-            routeBuilder.RequireAuthorization(config.PolicyBuilder);
-        }
-        else if (config.PolicyName is not null)
-        {
-            routeBuilder.RequireAuthorization(config.PolicyName);
-        }
-        else if (config.Roles.Length > 0)
-        {
-            routeBuilder.RequireAuthorization(policy => policy.RequireRole(config.Roles));
-        }
+        ApplyAuthorization(routeBuilder, ResolveEffectiveAuthorization(config));
 
         foreach (var filterType in config.FilterTypes)
         {
@@ -484,14 +469,35 @@ internal static class EndpointRegistry
 
             if (!isIResult && !hasExplicitSuccessResponse)
             {
-                RegisterProduces(routeBuilder, 200, openApiResponseType);
+                RegisterProduces(routeBuilder, 200, openApiResponseType, contentType: null);
             }
         }
 
-        foreach (var (statusCode, bodyType) in config.ExtraProducesEntries)
+        foreach (var (statusCode, bodyType, contentType) in config.ExtraProducesEntries)
         {
-            RegisterProduces(routeBuilder, statusCode, bodyType);
+            RegisterProduces(routeBuilder, statusCode, bodyType, contentType);
         }
+    }
+
+    /// <summary>
+    /// Resolves the authorization requirement that should actually be applied to a route.
+    /// A per-endpoint requirement always takes precedence over the group's. When the endpoint
+    /// declares no requirement of its own (<see cref="AuthorizationRequirement.Unspecified"/>),
+    /// the group's requirement is used as a fallback. This resolution happens per endpoint and
+    /// is applied directly to that endpoint's own route, rather than to the shared group
+    /// builder, so that ASP.NET Core does not AND-combine the group's and the endpoint's
+    /// authorization metadata together.
+    /// </summary>
+    private static AuthorizationRequirement ResolveEffectiveAuthorization(
+        EndpointConfiguration config
+    )
+    {
+        if (config.Authorization is not AuthorizationRequirement.Unspecified)
+        {
+            return config.Authorization;
+        }
+
+        return config.GroupConfig?.Authorization ?? AuthorizationRequirement.Default;
     }
 
     private static Type GetOpenApiResponseType(Type responseType)
@@ -510,7 +516,8 @@ internal static class EndpointRegistry
     private static void RegisterProduces(
         RouteHandlerBuilder routeBuilder,
         int statusCode,
-        Type bodyType
+        Type bodyType,
+        string? contentType
     )
     {
         var isNoBodyResponse =
@@ -519,6 +526,12 @@ internal static class EndpointRegistry
         if (isNoBodyResponse)
         {
             routeBuilder.Produces(statusCode);
+            return;
+        }
+
+        if (contentType is not null)
+        {
+            routeBuilder.Produces(statusCode, bodyType, contentType);
             return;
         }
 
@@ -535,22 +548,14 @@ internal static class EndpointRegistry
             groupBuilder.WithTags(config.Tags);
         }
 
-        if (config.IsAnonymousAllowed)
-        {
-            groupBuilder.AllowAnonymous();
-        }
-        else if (config.PolicyBuilder is not null)
-        {
-            groupBuilder.RequireAuthorization(config.PolicyBuilder);
-        }
-        else if (config.PolicyName is not null)
-        {
-            groupBuilder.RequireAuthorization(config.PolicyName);
-        }
-        else if (config.Roles.Length > 0)
-        {
-            groupBuilder.RequireAuthorization(policy => policy.RequireRole(config.Roles));
-        }
+        // Authorization is intentionally NOT applied here. ASP.NET Core combines
+        // (ANDs) authorization metadata declared at different levels of the same
+        // endpoint rather than letting a more specific level override a less specific
+        // one, so applying it to the shared group builder would make it impossible for
+        // an endpoint to truly override the group's requirement. Instead, each
+        // endpoint's effective authorization requirement — falling back to the group's
+        // when the endpoint declares none of its own — is resolved and applied
+        // per-endpoint in ApplyMetadata via ResolveEffectiveAuthorization.
 
         foreach (var filterType in config.FilterTypes)
         {
@@ -562,6 +567,40 @@ internal static class EndpointRegistry
                     return await filter.InvokeAsync(context, next);
                 }
             );
+        }
+    }
+
+    // Translates the declared authorization requirement into ASP.NET Core metadata.
+    // Unspecified adds nothing, so the endpoint inherits the application's fallback policy.
+    private static void ApplyAuthorization<TBuilder>(
+        TBuilder builder,
+        AuthorizationRequirement requirement
+    )
+        where TBuilder : IEndpointConventionBuilder
+    {
+        switch (requirement)
+        {
+            case AuthorizationRequirement.Unspecified:
+                break;
+            case AuthorizationRequirement.Anonymous:
+                builder.AllowAnonymous();
+                break;
+            case AuthorizationRequirement.AuthenticatedUser:
+                builder.RequireAuthorization();
+                break;
+            case AuthorizationRequirement.Roles roles:
+                builder.RequireAuthorization(policy => policy.RequireRole(roles.Names));
+                break;
+            case AuthorizationRequirement.NamedPolicy named:
+                builder.RequireAuthorization(named.Name);
+                break;
+            case AuthorizationRequirement.CustomPolicy custom:
+                builder.RequireAuthorization(custom.Build);
+                break;
+            default:
+                throw new InvalidOperationException(
+                    $"Unhandled authorization requirement: {requirement.GetType().Name}"
+                );
         }
     }
 }

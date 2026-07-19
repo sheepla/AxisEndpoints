@@ -6,12 +6,10 @@ internal sealed class EndpointGroupConfiguration : IEndpointGroupConfiguration
 {
     internal string Prefix { get; private set; } = string.Empty;
     internal string[] Tags { get; private set; } = [];
-    internal bool IsAnonymousAllowed { get; private set; }
 
-    // Authorization state: mutually exclusive — last call wins.
-    internal string[] Roles { get; private set; } = [];
-    internal string? PolicyName { get; private set; }
-    internal Action<AuthorizationPolicyBuilder>? PolicyBuilder { get; private set; }
+    // Authorization state: a single value — last call wins.
+    internal AuthorizationRequirement Authorization { get; private set; } =
+        AuthorizationRequirement.Default;
 
     internal List<Type> FilterTypes { get; } = [];
 
@@ -31,19 +29,16 @@ internal sealed class EndpointGroupConfiguration : IEndpointGroupConfiguration
         params string[] roles
     )
     {
-        IsAnonymousAllowed = false;
-        Roles = roles;
-        PolicyName = null;
-        PolicyBuilder = null;
+        Authorization =
+            roles.Length > 0
+                ? new AuthorizationRequirement.Roles(roles)
+                : new AuthorizationRequirement.AuthenticatedUser();
         return this;
     }
 
     IEndpointGroupConfiguration IEndpointGroupConfiguration.RequireAuthorization(string policy)
     {
-        IsAnonymousAllowed = false;
-        PolicyName = policy;
-        Roles = [];
-        PolicyBuilder = null;
+        Authorization = new AuthorizationRequirement.NamedPolicy(policy);
         return this;
     }
 
@@ -51,16 +46,13 @@ internal sealed class EndpointGroupConfiguration : IEndpointGroupConfiguration
         Action<AuthorizationPolicyBuilder> build
     )
     {
-        IsAnonymousAllowed = false;
-        PolicyBuilder = build;
-        Roles = [];
-        PolicyName = null;
+        Authorization = new AuthorizationRequirement.CustomPolicy(build);
         return this;
     }
 
     IEndpointGroupConfiguration IEndpointGroupConfiguration.AllowAnonymous()
     {
-        IsAnonymousAllowed = true;
+        Authorization = new AuthorizationRequirement.Anonymous();
         return this;
     }
 

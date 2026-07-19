@@ -28,46 +28,63 @@ public class EndpointGroupConfigurationTests
     }
 
     [Fact]
-    public void AllowAnonymous_SetsIsAnonymousAllowed()
+    public void AllowAnonymous_SetsAnonymousRequirement()
     {
         _config.AllowAnonymous();
 
-        Internal.IsAnonymousAllowed.Should().BeTrue();
+        Internal.Authorization.Should().BeOfType<AuthorizationRequirement.Anonymous>();
     }
 
     [Fact]
-    public void RequireAuthorization_WithRoles_SetsRoles()
+    public void RequireAuthorization_WithRoles_SetsRolesRequirement()
     {
         _config.RequireAuthorization("Admin", "User");
 
-        Internal.Roles.Should().BeEquivalentTo("Admin", "User");
-        Internal.IsAnonymousAllowed.Should().BeFalse();
-        Internal.PolicyName.Should().BeNull();
-        Internal.PolicyBuilder.Should().BeNull();
+        Internal
+            .Authorization.Should()
+            .BeOfType<AuthorizationRequirement.Roles>()
+            .Which.Names.Should()
+            .BeEquivalentTo("Admin", "User");
     }
 
     [Fact]
-    public void RequireAuthorization_WithPolicy_SetsPolicyName()
+    public void RequireAuthorization_WithoutRoles_RequiresAuthenticatedUser()
+    {
+        _config.RequireAuthorization();
+
+        Internal.Authorization.Should().BeOfType<AuthorizationRequirement.AuthenticatedUser>();
+    }
+
+    [Fact]
+    public void RequireAuthorization_WithPolicy_SetsNamedPolicyRequirement()
     {
         _config.RequireAuthorization("PolicyName");
 
-        Internal.PolicyName.Should().Be("PolicyName");
-        Internal.Roles.Should().BeEmpty();
-        Internal.PolicyBuilder.Should().BeNull();
-        Internal.IsAnonymousAllowed.Should().BeFalse();
+        Internal
+            .Authorization.Should()
+            .BeOfType<AuthorizationRequirement.NamedPolicy>()
+            .Which.Name.Should()
+            .Be("PolicyName");
     }
 
     [Fact]
-    public void RequireAuthorization_WithBuilder_SetsPolicyBuilder()
+    public void RequireAuthorization_WithBuilder_SetsCustomPolicyRequirement()
     {
         Action<AuthorizationPolicyBuilder> builder = b => b.RequireRole("Admin");
 
         _config.RequireAuthorization(builder);
 
-        Internal.PolicyBuilder.Should().BeSameAs(builder);
-        Internal.Roles.Should().BeEmpty();
-        Internal.PolicyName.Should().BeNull();
-        Internal.IsAnonymousAllowed.Should().BeFalse();
+        Internal
+            .Authorization.Should()
+            .BeOfType<AuthorizationRequirement.CustomPolicy>()
+            .Which.Build.Should()
+            .BeSameAs(builder);
+    }
+
+    [Fact]
+    public void Authorization_DefaultsToUnspecified()
+    {
+        Internal.Authorization.Should().BeOfType<AuthorizationRequirement.Unspecified>();
     }
 
     [Fact]
