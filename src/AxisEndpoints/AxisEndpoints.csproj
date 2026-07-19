@@ -8,7 +8,7 @@
     <PackageId>AxisEndpoints</PackageId>
     <Version>1.0.0</Version>
     <Title>AxisEndpoints</Title>
-    <Description>A DSL for implementing the Request-Endpoint-Response (REPR) pattern in ASP.NET Core. Consolidates endpoints with a clear and explicit programming interface, well-suited for Vertical Slice Architecture projects.</Description>
+    <Description>A library for implementing the Request-Endpoint-Response pattern in ASP.NET Core, based on Minimal API</Description>
     <Authors>Sheepla</Authors>
     <PackageProjectUrl>https://github.com/sheepla/AxisEndpoints</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- WebApplication, IHttpContextAccessor など ASP.NET Core の型を使うために必要 -->
+    <!-- Required for using types ASP.NET Core types e.g. WebApplication, IHttpContextAccessor -->
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 

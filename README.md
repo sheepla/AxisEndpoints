@@ -30,7 +30,7 @@
 
 ## About
 
-**AxisEndpoints** is a DSL for implementing the Request-Endpoint-Response (REPR) pattern in ASP.NET Core. It consolidates each API endpoint into a self-contained class with a clear, explicit programming interface.
+**AxisEndpoints** is a library for implementing the Request-Endpoint-Response (REPR) pattern in ASP.NET Core. It consolidates each API endpoint into a self-contained class with a clear, explicit programming interface.
 
 - **Clear and explicit programming interface**: each endpoint declares its request type, result type, route, and metadata in one place.
 - **Modular package structure**: extensions are provided as separate packages so you can include only the features you need.
@@ -46,7 +46,7 @@ Packages are available on nuget.org:
 | Package                              | Description                                                                                                                                                    |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [AxisEndpoints](https://www.nuget.org/packages/AxisEndpoints)                      | Core package. Provides `IEndpoint<TRequest, TResult>` and related primitives.                                                                                  |
-| [AxisEndpoints.Extensions.CsvHelper](https://www.nuget.org/packages/AxisEndpoints.Extensions.CsvHelpe) | Optional. Integrates CsvHelper for typed CSV import (`CsvRequest<TRow>`) and streaming export (`CsvResponse<TRow>`). |
+| [AxisEndpoints.Extensions.CsvHelper](https://www.nuget.org/packages/AxisEndpoints.Extensions.CsvHelper) | Optional. Integrates CsvHelper for typed CSV import (`CsvRequest<TRow>`) and streaming export (`CsvResponse<TRow>`). |
 
 You can install with .NET CLI with the following command:
 
