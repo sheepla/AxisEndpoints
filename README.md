@@ -37,6 +37,8 @@
 - **Gentle learning curve**: AxisEndpoints is a lightweight wrapper around the Minimal API. Developers familiar with Minimal API should find it easy to adopt.
 - **Well-suited for Vertical Slice Architecture**: the REPR pattern is a natural fit for Vertical Slice Architecture, where each feature is a self-contained unit with loose coupling between slices.
 
+Since it is built on ASP.NET Core Minimal APIs, developers who have experience with ASP.NET Core API development can apply their existing knowledge.
+
 ## Installation
 
 ### Install from nuget.org (Recommended)
