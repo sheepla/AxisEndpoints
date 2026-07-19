@@ -145,7 +145,7 @@ import { Steps } from "@astrojs/starlight/components";
 The tutorial project included in this repository uses the same setup and exposes the Scalar UI after startup.
 
 <img
-  src="./images/tutorial-scalar.png"
+  src={`${import.meta.env.BASE_URL}images/tutorial-scalar.png`}
   alt="Scalar API reference showing the tutorial hello endpoint"
   style={{
     borderRadius: "0.75rem",
@@ -154,4 +154,4 @@ The tutorial project included in this repository uses the same setup and exposes
   }}
 />
 
-For more details on endpoint structure and request binding, see [Defining Endpoints](/guides/defining-endpoints/) and [Request Binding](/guides/request-binding/).
+For more details on endpoint structure and request binding, see [Defining Endpoints](../../guides/defining-endpoints/) and [Request Binding](../../guides/request-binding/).

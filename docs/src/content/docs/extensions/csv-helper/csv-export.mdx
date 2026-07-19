@@ -44,7 +44,7 @@ public sealed class ExportUsersEndpoint : IEndpoint<CsvResponse<UserExportRow>>
 :::note
 `CsvResponse<TRow>` implements `IResult`, so — like any other `IResult` return type — its response
 shape is not inferred automatically for OpenAPI. Without `ProducesSuccess<TRow>(contentType: "text/csv")`,
-the endpoint will have no documented success response at all. See [Core Primitives](/guides/core-primitives/)
+the endpoint will have no documented success response at all. See [Core Primitives](../../../guides/core-primitives/)
 for the general rule on when `ProducesSuccess` is required.
 :::
 
@@ -74,4 +74,4 @@ CsvResponse.From(
 );
 ```
 
-For custom column mapping on export, see [Class Map](/extensions/csv-helper/class-map/).
+For custom column mapping on export, see [Class Map](../class-map/).

@@ -1,4 +1,5 @@
 // @ts-check
+import { execSync } from "node:child_process";
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import starlightThemeNord from "starlight-theme-nord";
@@ -6,12 +7,24 @@ import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 import mermaid from "astro-mermaid";
 
-const repositoryName = process.env.GITHUB_REPOSITORY?.split("/")[1];
+const repositoryName =
+  process.env.GITHUB_REPOSITORY?.split("/")[1] ??
+  (() => {
+    try {
+      const remote = execSync("git remote get-url origin", {
+        encoding: "utf-8",
+      }).trim();
+      return remote.match(/\/([^/]+?)(?:\.git)?$/)?.[1];
+    } catch {
+      return undefined;
+    }
+  })();
 const site = process.env.SITE_URL ?? "https://sheepla.github.io";
 const base = process.env.BASE_PATH ?? (repositoryName ? `/${repositoryName}` : "/");
 
 // https://astro.build/config
 export default defineConfig({
+  trailingSlash: "always",
   site,
   base,
   integrations: [
@@ -54,15 +67,16 @@ export default defineConfig({
             { label: "CSV Helper", slug: "extensions/csv-helper" },
             { label: "CSV Import", slug: "extensions/csv-helper/csv-import" },
             { label: "CSV Export", slug: "extensions/csv-helper/csv-export" },
-            { label: "Row Validation", slug: "extensions/csv-helper/row-validation" },
+            {
+              label: "Row Validation",
+              slug: "extensions/csv-helper/row-validation",
+            },
             { label: "Class Map", slug: "extensions/csv-helper/class-map" },
           ],
         },
         {
           label: "FAQ",
-          items: [
-            { label: "FAQ", slug: "faq" },
-          ],
+          items: [{ label: "FAQ", slug: "faq" }],
         },
       ],
     }),

@@ -11,7 +11,7 @@ AxisEndpoints provides a thin abstraction layer on top of ASP.NET Core Minimal A
 
 These are the core interfaces for endpoint definitions. Use `Configure()` to declare routing and metadata, and `HandleAsync()` to process the request. Use `IEndpoint<TRequest, TResult>` when the endpoint has request parameters, and `IEndpoint<TResult>` when it does not.
 
-See [Defining Endpoints](/guides/defining-endpoints/) for details.
+See [Defining Endpoints](../defining-endpoints/) for details.
 
 ### `IEndpointConfiguration`
 
@@ -21,7 +21,7 @@ This configuration interface is used inside `Configure()`. It lets you declare t
 
 This is a wrapper type for JSON responses. It has three properties: `StatusCode` (default: 200 OK), `Headers` (optional), and `Body` (required). When used as the return type of `HandleAsync`, the 200 response schema is registered in OpenAPI automatically.
 
-See [Response Types](/guides/response-types/) for details.
+See [Response Types](../response-types/) for details.
 
 ### `EmptyResponse`
 
@@ -31,7 +31,7 @@ This is a marker type for responses without a body. Use it as `Response<EmptyRes
 
 This interface comes from ASP.NET Core Minimal APIs. It is produced by factory methods such as `Results.Json()`, `Results.Problem()`, and `Results.Ok()`. In AxisEndpoints, returning `IResult` from `HandleAsync` lets you produce multiple response shapes. When you return `IResult`, you must declare OpenAPI metadata explicitly with `ProducesSuccess<TBody>()` and `ProducesError(HttpStatusCode)`.
 
-See [Error Responses](/guides/error-responses/) for details.
+See [Error Responses](../error-responses/) for details.
 
 ### `EndpointContext`
 
@@ -45,19 +45,19 @@ This class provides controlled access to the HTTP context. Inject it through the
 | `GetRouteValue(key)` | `string?` | Route parameter |
 | `RawResponse` | `HttpResponse` | Direct access to the response stream |
 
-See [HTTP Context](/guides/http-context/) for details.
+See [HTTP Context](../http-context/) for details.
 
 ### `IEndpointGroup` / `IEndpointGroupConfiguration`
 
 This mechanism allows multiple endpoints to share a common route prefix, tags, authorization policies, and filters. Implement `IEndpointGroup` to define a group and reference it from endpoints with `config.Group<TGroup>()`.
 
-See [Endpoint Groups](/guides/endpoint-groups/) for details.
+See [Endpoint Groups](../endpoint-groups/) for details.
 
 ### `IEndpointFilter`
 
 This filter interface comes from ASP.NET Core Minimal APIs. It lets you run logic before or after the request reaches the handler. Unlike middleware, filters can be scoped to specific endpoints or groups. In AxisEndpoints, register them with `config.AddFilter<TFilter>()`, and they are resolved from the DI container.
 
-See [Filters](/guides/filters/) for details.
+See [Filters](../filters/) for details.
 
 ### `ProblemDetails`
 
@@ -75,7 +75,7 @@ Common fields:
 
 Use this format to return consistent error information to clients when an API request fails. AxisEndpoints' DataAnnotations validation filter also returns errors in this format. When you use `ProducesError(HttpStatusCode)`, `ProblemDetails` is registered automatically as the error response type in OpenAPI.
 
-See [Error Responses](/guides/error-responses/) for details.
+See [Error Responses](../error-responses/) for details.
 
 ---
 

@@ -37,4 +37,4 @@ public class FindByIdEndpoint : IEndpoint<FindByIdRequest, Response<UserResponse
 | `GetRouteValue(key)` | `string?`           | A single route parameter by name                         |
 | `RawResponse`        | `HttpResponse`      | Escape hatch for writing directly to the response stream |
 
-`RawResponse` is intended for cases that `Response<TBody>` and extension packages cannot cover. For CSV output, the [CSV Helper extension](/extensions/csv-helper/) is the preferred approach.
+`RawResponse` is intended for cases that `Response<TBody>` and extension packages cannot cover. For CSV output, the [CSV Helper extension](../../extensions/csv-helper/) is the preferred approach.

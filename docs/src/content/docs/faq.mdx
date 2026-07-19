@@ -18,7 +18,7 @@ It depends on the size and nature of your project. For small APIs, Minimal APIs 
 
 The REPR pattern keeps each endpoint self-contained, which reduces coupling between features and scales more predictably. It is especially useful when you adopt Vertical Slice Architecture.
 
-Choose the approach that fits your project. You can also refer to the comparison table on the top page: [Why REPR?](/)
+Choose the approach that fits your project. You can also refer to the comparison table on the top page: [Why REPR?](../)
 
 ## Why is my response type missing from OpenAPI?
 
@@ -36,4 +36,4 @@ public void Configure(IEndpointConfiguration config)
 
 If you return `Response<TBody>`, the 200 response schema is registered automatically, so these calls are not needed.
 
-See the [Error Responses](/guides/error-responses/) guide for details.
+See the [Error Responses](../guides/error-responses/) guide for details.
