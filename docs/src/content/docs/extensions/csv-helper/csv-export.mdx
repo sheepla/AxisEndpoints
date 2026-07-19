@@ -21,7 +21,13 @@ public sealed class ExportUsersEndpoint : IEndpoint<CsvResponse<UserExportRow>>
 
     public void Configure(IEndpointConfiguration config)
     {
-        config.Get("/users/export").Summary("Export users as CSV");
+        config
+            .Get("/users/export")
+            .Summary("Export users as CSV")
+            // CsvResponse<TRow> implements IResult, so the success response is not inferred
+            // automatically. Declare it explicitly, and set contentType because the actual
+            // response is text/csv rather than the application/json default.
+            .ProducesSuccess<UserExportRow>(contentType: "text/csv");
     }
 
     public Task<CsvResponse<UserExportRow>> HandleAsync(CancellationToken cancel)
@@ -34,6 +40,13 @@ public sealed class ExportUsersEndpoint : IEndpoint<CsvResponse<UserExportRow>>
 ```
 
 `CsvResponse.From` also accepts `IEnumerable<T>` for synchronous sequences.
+
+:::note
+`CsvResponse<TRow>` implements `IResult`, so — like any other `IResult` return type — its response
+shape is not inferred automatically for OpenAPI. Without `ProducesSuccess<TRow>(contentType: "text/csv")`,
+the endpoint will have no documented success response at all. See [Core Primitives](/guides/core-primitives/)
+for the general rule on when `ProducesSuccess` is required.
+:::
 
 ## `CsvResponse.From` Parameters
 

@@ -13,7 +13,9 @@ Middleware is applied globally to all requests, while filters can be scoped to s
 
 ### Registering Filters in AxisEndpoints
 
-In AxisEndpoints, register filters with `config.AddFilter<TFilter>()`. Filters are resolved from the DI container, so constructor injection works as expected. Filter classes are also registered automatically by `AddAxisEndpoints()` assembly scanning, so manual registration is not required.
+In AxisEndpoints, register filters with `config.AddFilter<TFilter>()`. Filters are resolved from the DI container, so constructor injection works as expected.
+
+Filter classes defined in the assembly or assemblies passed to `AddAxisEndpoints()` — by default, the entry assembly — are registered automatically by its scanning, so manual registration is not required for those. This does **not** extend to filters shipped in a separate NuGet package, since that package's assembly is not scanned unless you pass it explicitly. Such packages must register their filters themselves; the CSV Helper extension does this via `AddAxisEndpointsCsvHelper()`. See the [CSV Helper extension](/extensions/csv-helper/) for an example.
 
 ---
 

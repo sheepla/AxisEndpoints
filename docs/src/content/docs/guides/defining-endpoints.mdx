@@ -43,6 +43,15 @@ public interface IEndpoint<TResult>
 
 Endpoint classes are resolved from the DI container, so you can inject dependencies through the constructor. Assembly scanning in `AddAxisEndpoints()` automatically registers classes that implement `IEndpoint`.
 
+:::caution
+`Configure()` is called once at startup, when `MapAxisEndpoints()` reads each endpoint's routing
+and metadata. At that point the endpoint instance is created without running its constructor, so
+any fields normally set by constructor injection are not available yet. `Configure()` must only
+call methods on the `IEndpointConfiguration` argument — it must not read `this` fields or call
+other instance members. `HandleAsync()`, by contrast, always runs on a fully constructed instance
+resolved from DI per request.
+:::
+
 ### Supported HTTP methods
 
 `IEndpointConfiguration` supports the following six HTTP methods:

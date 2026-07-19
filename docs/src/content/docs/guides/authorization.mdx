@@ -3,6 +3,21 @@ title: "Authorization"
 description: "Configure role-based, policy-based, and anonymous access for AxisEndpoints."
 ---
 
+## Require any authenticated user
+
+Call `RequireAuthorization()` with no arguments to require an authenticated user without restricting to a specific role or policy.
+
+```csharp
+public class ProfileEndpoint : IEndpoint<Response<ProfileResponse>>
+{
+    public void Configure(IEndpointConfiguration config)
+    {
+        config.Get("/profile").RequireAuthorization();
+    }
+    // ...
+}
+```
+
 ## Require roles
 
 Pass one or more role names to restrict access to users in at least one of those roles.
@@ -74,7 +89,9 @@ public class HealthEndpoint : IEndpoint<Response<HealthResponse>>
 
 ## Group-level authorization
 
-Authorization set on a group applies to all endpoints in that group. Per-endpoint settings take precedence.
+Authorization set on a group applies to all endpoints in that group. An endpoint's own
+authorization setting fully replaces the group's rather than being combined with it; an
+endpoint that declares no setting of its own inherits the group's setting unchanged.
 
 ```csharp
 public class UsersGroup : IEndpointGroup

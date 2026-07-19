@@ -89,6 +89,10 @@ public class CreateOrderEndpoint : IEndpoint<CreateOrderRequest, IResult>
 
 `ProducesSuccess`, `ProducesError`, and `ProducesError<TError>` can be mixed freely in the same `Configure` call.
 
+Each of these methods accepts an optional `contentType` parameter, which defaults to `application/json`.
+Set it explicitly when `HandleAsync` returns a non-JSON `IResult`, such as `CsvResponse<TRow>` from the
+CSV Helper extension, which should be declared with `contentType: "text/csv"`.
+
 :::note
 When `HandleAsync` returns `Response<TBody>`, the 200 schema is registered automatically and `ProducesSuccess` is not needed. `ProducesSuccess` is only required when the return type is `IResult`.
 :::

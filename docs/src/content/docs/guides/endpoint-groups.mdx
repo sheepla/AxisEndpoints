@@ -63,7 +63,18 @@ public class GetUsersEndpoint : IEndpoint<Response<GetUsersResponse>>
 ```
 
 :::note
-Calling `.RequireAuthorization()` with no arguments passes an empty role array, so authorization is effectively not applied. Always specify either a policy name, such as `RequireAuthorization("CanManageUsers")`, or multiple role names, such as `RequireAuthorization("Admin", "SuperAdmin")`. Passing a single string selects the `string policy` overload, so it is interpreted as a policy name rather than a role.
+Calling `.RequireAuthorization()` with no arguments requires an authenticated user without restricting to any specific role or policy. To restrict further, pass a policy name, such as `RequireAuthorization("CanManageUsers")`, or one or more role names, such as `RequireAuthorization("Admin", "SuperAdmin")`. Passing a single string selects the `string policy` overload, so it is interpreted as a policy name rather than a role.
+:::
+
+:::note
+"Per-endpoint settings take precedence" means an endpoint's own authorization setting — whether
+`AllowAnonymous()`, `RequireAuthorization()`, a role list, a named policy, or a custom policy —
+fully replaces the group's, rather than being combined with it. An endpoint that declares no
+authorization setting of its own inherits the group's setting unchanged. This is a deliberate
+choice by AxisEndpoints: plain ASP.NET Core Minimal APIs would instead AND multiple
+`RequireAuthorization` declarations together when they are applied at different levels of the
+same endpoint, which would make it impossible for a single endpoint to opt out of a group's
+policy.
 :::
 
 ## Role-Based Group Authorization
